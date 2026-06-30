@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>또박 쉬운 정보 변환 결과</title>
+<style>
+  body {
+    font-family: "Noto Sans KR", "Malgun Gothic", sans-serif;
+    color: #1a1a1a;
+    background: #ffffff;
+    margin: 0;
+    padding: 24px;
+  }
+  .disclaimer {
+    background: #fff7e6;
+    border: 2px solid #e8a400;
+    border-radius: 8px;
+    padding: 16px 20px;
+    font-size: 16px;
+    line-height: 1.8;
+    margin-bottom: 24px;
+  }
+  .badges { display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 24px; }
+  .badge { border-radius: 999px; padding: 8px 16px; font-size: 15px; font-weight: 700; }
+  .badge-ker { background: #e6f0ff; color: #1452cc; }
+  .badge-pass { background: #e3f9e5; color: #137333; }
+  .badge-revise { background: #fff4e5; color: #b06000; }
+  .badge-human_review { background: #fde7e7; color: #c5221f; }
+  .columns { display: flex; gap: 24px; align-items: stretch; }
+  .col { flex: 1 1 0; border: 1px solid #d9d9d9; border-radius: 8px; padding: 20px; }
+  .col h2 { font-size: 18px; margin-top: 0; }
+  .source { font-size: 15px; line-height: 1.7; text-align: left; white-space: pre-wrap; }
+  /* spec 3.4 easy layout: >=14pt (18px), left-align, generous spacing */
+  .easy { font-size: 18px; line-height: 2.0; text-align: left; letter-spacing: 0.01em; white-space: pre-wrap; }
+  .pictograms { display: flex; flex-wrap: wrap; gap: 16px; margin-top: 20px; }
+  .pictogram { display: flex; flex-direction: column; align-items: center; font-size: 15px; width: 96px; text-align: center; }
+  .pictogram img { width: 64px; height: 64px; }
+  .violations { margin-top: 24px; }
+  .violations ul { padding-left: 20px; }
+  .violations li { font-size: 15px; line-height: 1.8; margin-bottom: 8px; }
+  .sev-high { color: #c5221f; font-weight: 700; }
+  .sev-med { color: #b06000; }
+  .sev-low { color: #555555; }
+  .ker-note { font-size: 14px; color: #555555; margin-top: 8px; }
+</style>
+</head>
+<body>
+
+<div class="disclaimer" role="note">{{ disclaimer }}</div>
+
+<div class="badges">
+  <span class="badge badge-ker">K-ER {{ ker_score }}점 · {{ level_label }}</span>
+  <span class="badge badge-{{ fidelity_badge_class }}">사실충실성: {{ fidelity_badge_label }}</span>
+</div>
+
+<div class="columns">
+  <section class="col">
+    <h2>원문</h2>
+    <div class="source">{{ source_text }}</div>
+  </section>
+  <section class="col">
+    <h2>쉬운 글</h2>
+    <div class="easy">{{ easy_text }}</div>
+    {% if pictograms %}
+    <div class="pictograms">
+      {% for p in pictograms %}
+      <figure class="pictogram">
+        <img src="{{ p.glyph_id }}" alt="{{ p.caption }}">
+        <figcaption>{{ p.caption }}</figcaption>
+      </figure>
+      {% endfor %}
+    </div>
+    {% endif %}
+  </section>
+</div>
+
+<section class="violations">
+  <h2>K-ER 점수 {{ ker_score }}점</h2>
+  <p class="ker-note">{{ ker_unvalidated_note }}</p>
+  <p class="ker-note">규칙 기반 루브릭, 경험적 검증 아님</p>
+  {% if violations %}
+  <ul>
+    {% for v in violations %}
+    <li>
+      <span class="sev-{{ v.severity }}">[{{ v.severity }}]</span>
+      <strong>{{ v.rule }}</strong>: &ldquo;{{ v.span }}&rdquo; &rarr; {{ v.suggestion }}
+    </li>
+    {% endfor %}
+  </ul>
+  {% else %}
+  <p>위반 사항이 없습니다.</p>
+  {% endif %}
+</section>
+
+<!-- 주의: 쉬운본은 보조 자료이며 법적 효력은 원문이 우선합니다 -->
+
+</body>
+</html>
