@@ -13,7 +13,7 @@ from ttobak.fidelity.extract import extract_slots
 from ttobak.fidelity.models import FidelityReport, Slot, SlotType
 from ttobak.fidelity.negation_guard import check_negation_flip
 from ttobak.fidelity.router import route
-from ttobak.fidelity.verify_slots import verify_high_slots
+from ttobak.fidelity.verify_slots import detect_drift_flips, verify_high_slots
 from ttobak.ir import Document
 
 __all__ = ["verify", "FidelityReport", "Slot", "SlotType"]
@@ -31,13 +31,16 @@ def verify(source: Document, easy_text: str, ref_date: date,
     slots = extract_slots(source, ref_date)
     failed = verify_high_slots(slots, easy_text, ref_date, rounding_allowlist=rounding_allowlist)
     negation_flips = check_negation_flip(source.text(), easy_text)
+    # Unsafe meaning flips that PRESERVE the raw value (date inclusivity,
+    # eligibility boundary operator). These route to HUMAN_REVIEW, never REVISE.
+    drift_flips = detect_drift_flips(slots, easy_text, ref_date)
     nli_contradictions: list[str] = []
     if use_nli:  # pragma: no cover - STRETCH, gated off in MVP/tests
         nli_contradictions = _run_nli(source.text(), easy_text)
 
     verdict = route(
         failed_slots=failed,
-        negation_flips=negation_flips,
+        negation_flips=negation_flips + drift_flips,
         nli_contradictions=nli_contradictions,
         extraction_low_confidence=_low_confidence(source),
     )
@@ -47,7 +50,7 @@ def verify(source: Document, easy_text: str, ref_date: date,
         verdict=verdict,
         exact_fail_count=len(failed),
         nli_contradictions=nli_contradictions,
-        drift_flags=negation_flips,
+        drift_flags=negation_flips + drift_flips,
         failed_slots=failed,
     )
 
