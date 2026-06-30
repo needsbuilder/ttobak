@@ -5,9 +5,16 @@
 """
 from __future__ import annotations
 
+import html as _html
 from pathlib import Path
 
+from ttobak.common import Verdict
 from ttobak.levels import Level
+from ttobak.metric.models import KERReport
+from ttobak.parse import parse
+from ttobak.pipeline import simplify
+from ttobak.providers.base import LLMProvider
+from ttobak.render import render_html
 
 # 사람이 읽는 한국어 라벨 -> Level. 순서 보존(dict).
 LEVEL_CHOICES: dict[str, Level] = {
@@ -54,3 +61,39 @@ def _file_path(file_obj) -> str | None:
         return file_obj
     name = getattr(file_obj, "name", None)
     return name if isinstance(name, str) else None
+
+
+_FIDELITY_LABEL: dict[Verdict, str] = {
+    Verdict.PASS: "Fidelity 통과 ✅",
+    Verdict.REVISE: "Fidelity 재교정됨 🔁",
+    Verdict.HUMAN_REVIEW: "검수 필요 ⚠️ (사람 확인 권장)",
+}
+
+
+def _ker_badge(ker: KERReport) -> str:
+    """K-ER 점수 한 줄 요약. '규칙 기반·미검증 보조 지표'임을 명시한다."""
+    n = len(ker.violations)
+    return f"K-ER {ker.score:.0f}/100 · 위반 {n}건 (규칙 기반 루브릭, 경험적 검증 아님)"
+
+
+def _fidelity_badge(verdict: Verdict) -> str:
+    """Fidelity 판정 배지 텍스트."""
+    return _FIDELITY_LABEL.get(verdict, "검수 필요 ⚠️")
+
+
+def simplify_handler(text_input: str, file_obj, level_label: str, provider: LLMProvider) -> tuple[str, str, str]:
+    """Gradio 버튼 핸들러 — (html, ker_badge, fidelity_badge) 반환.
+
+    예외는 절대 올리지 않는다(UI가 500 대신 메시지를 보여주도록):
+    실패 시 슬롯 0에 오류 HTML, 배지는 빈 문자열.
+    """
+    try:
+        source, mime = _load_source(text_input, file_obj)
+        level = _resolve_level(level_label)
+        doc = parse(source, mime)
+        result = simplify(doc, level, provider)
+        html = render_html(result)
+        return html, _ker_badge(result.ker), _fidelity_badge(result.fidelity.verdict)
+    except Exception as exc:  # noqa: BLE001 — 데모 UI는 어떤 실패도 메시지로 표시
+        msg = _html.escape(str(exc)) or "변환 중 오류가 발생했습니다."
+        return f'<div class="ttobak-error">변환 오류: {msg}</div>', "", ""
