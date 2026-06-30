@@ -45,6 +45,9 @@ Homepage = "https://github.com/ttobak/ttobak"
 where = ["."]
 include = ["ttobak*"]
 
+[tool.setuptools.package-data]
+ttobak = ["data/*.txt"]
+
 [tool.pytest.ini_options]
 minversion = "8.0"
 addopts = "-ra"
