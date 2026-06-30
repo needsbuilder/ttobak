@@ -1,15 +1,52 @@
-Ttobak (또박) — Korean Easy-Read engine
+Ttobak (또박)
 Copyright 2026 Ttobak contributors
 
-This product includes software developed as part of the Ttobak project.
+This product includes software developed as part of the Ttobak project,
+licensed under the Apache License, Version 2.0 (the "License"); you may not
+use these files except in compliance with the License. You may obtain a copy
+of the License at http://www.apache.org/licenses/LICENSE-2.0
 
-Licensed under the Apache License, Version 2.0 (the "License");
-you may not use this file except in compliance with the License.
-You may obtain a copy of the License at
+=============================================================================
+Third-party components
+=============================================================================
+Full per-component license texts and sources are in THIRD_PARTY_LICENSES.md.
+Required attributions follow.
 
-    http://www.apache.org/licenses/LICENSE-2.0
+-----------------------------------------------------------------------------
+Apache-2.0 dependencies (NOTICE aggregation)
+-----------------------------------------------------------------------------
+hwp-hwpx-parser, dateparser, transformers, sentence-transformers,
+pytesseract, opencv-python-headless are licensed under the Apache License 2.0.
+Their NOTICE obligations are satisfied by reproducing the Apache License 2.0
+in THIRD_PARTY_LICENSES.md.
 
-Third-party components and their licenses are listed in
-THIRD_PARTY_LICENSES.md. Pictogram assets are NOT covered by this
-license; they are CC BY-SA and shipped separately under /assets with
-their own LICENSE and ATTRIBUTION files (see assets/README.md).
+-----------------------------------------------------------------------------
+Weak-copyleft (LGPL) — separate dependency, dynamically linked, unmodified
+-----------------------------------------------------------------------------
+kiwipiepy and soynlp are licensed under the GNU Lesser General Public License
+v3 (LGPL-3.0). Ttobak depends on them as separate, unmodified, dynamically
+imported packages and does not modify or statically link their sources. Users
+may relink against modified versions per the LGPL.
+
+-----------------------------------------------------------------------------
+Model weights
+-----------------------------------------------------------------------------
+Local-model paths may use Qwen2.5 (Apache-2.0). Required attribution:
+  "Built with Qwen"
+and Kanana-1.5-8B/2.1B (Apache-2.0, Kakao). Non-commercial / gated models
+(Qwen2.5-3B/72B, Kanana-2-30B, EXAONE) are NOT shipped and are excluded from
+all release artifacts; documented only as known alternatives.
+
+-----------------------------------------------------------------------------
+Pictogram assets (shipped separately under /assets, not Apache-licensed)
+-----------------------------------------------------------------------------
+OpenMoji: "All emojis designed by OpenMoji – the open-source emoji and icon
+project. License: CC BY-SA 4.0 (https://creativecommons.org/licenses/by-sa/4.0/)".
+
+Mulberry Symbols: "Mulberry Symbols are copyright 2018 to 2026 Steve Lee and
+licensed under CC BY-SA 2.0 UK: England & Wales. See
+https://mulberrysymbols.org".
+
+These CC BY-SA assets live under /assets/pictograms/ with their own LICENSE
+files and are referenced by path/URL only — never embedded inline or base64
+into Apache-2.0 code or the CC BY 4.0 dataset.
