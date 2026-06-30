@@ -38,6 +38,9 @@ dev = [
 anthropic = ["anthropic>=0.40"]
 ollama = ["ollama>=0.4"]
 
+[project.scripts]
+ttobak = "ttobak.cli:main"
+
 [project.urls]
 Homepage = "https://github.com/ttobak/ttobak"
 
