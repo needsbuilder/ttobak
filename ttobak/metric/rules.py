@@ -363,15 +363,21 @@ def rule_negation_ratio(text: str, tokens: list[Token]) -> RuleResult:
 _PAREN_RE = re.compile(r"\(([^)]+)\)")
 
 
+def _is_glossed(term: str, text: str) -> bool:
+    """Return True if *term* appears immediately followed by a parenthetical gloss.
+
+    Pattern: <term><optional-space>'(' — e.g. '납부(돈을 내는 것)'.
+    This is the correct exemption check for R-07: the TERM before '(' must match
+    the hard token, not the parenthetical content inside '()'.
+    """
+    return bool(re.search(re.escape(term) + r"\s*\(", text))
+
+
 def rule_undefined_hard_term(text: str, tokens: list[Token]) -> RuleResult:
     """R-07: Hard specialist terms without explanation. (spec §5.1 R-07)"""
     _ensure_loaded()
-    # Extract parenthetical definitions already present
-    defined = set()
-    for m in _PAREN_RE.finditer(text):
-        defined.add(m.group(1).strip())
 
-    hard_hits = [t for t in tokens if t.form in _HARD_TERMS and t.form not in defined]
+    hard_hits = [t for t in tokens if t.form in _HARD_TERMS and not _is_glossed(t.form, text)]
     n_nouns = max(1, len(_noun_tokens(tokens)))
     ratio = len(hard_hits) / n_nouns
 

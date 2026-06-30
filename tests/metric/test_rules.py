@@ -7,6 +7,7 @@ from ttobak.metric.rules import (
     rule_passive_ratio,
     rule_negation_ratio,
     rule_hanja_loanword_ratio,
+    rule_undefined_hard_term,
 )
 
 
@@ -84,3 +85,22 @@ def test_all_rules_is_list_of_name_fn_pairs():
         assert expected in names
     for _name, fn in ALL_RULES:
         assert callable(fn)
+
+
+# M5 regression: parenthetical-exemption logic in R-07 (undefined_hard_term)
+def test_undefined_hard_term_glossed_term_yields_zero_violations():
+    """R-07: '납부(돈을 내는 것)' is correctly glossed → must yield 0 violations."""
+    text = "납부(돈을 내는 것)를 하세요."
+    tokens = [Token("납부", "NNG")]
+    r = rule_undefined_hard_term(text, tokens)
+    assert r.violations == [], (
+        f"Glossed hard term '납부(돈을 내는 것)' must yield 0 violations, got: {r.violations}"
+    )
+
+
+def test_undefined_hard_term_bare_term_yields_violation():
+    """R-07: bare '납부하세요' without gloss must still yield a violation."""
+    text = "납부하세요."
+    tokens = [Token("납부", "NNG")]
+    r = rule_undefined_hard_term(text, tokens)
+    assert r.violations, "Bare hard term '납부' without gloss must yield a violation"

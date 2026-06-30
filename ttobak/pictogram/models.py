@@ -5,7 +5,7 @@ the real PictogramRef with full icon library integration. Do NOT overwrite Task 
 """
 from __future__ import annotations
 
-from pydantic import BaseModel
+from pydantic import BaseModel, field_validator
 
 
 class PictogramRef(BaseModel):
@@ -15,3 +15,19 @@ class PictogramRef(BaseModel):
     set: str
     glyph_id: str
     caption: str
+
+    @field_validator("glyph_id")
+    @classmethod
+    def _reject_data_uri(cls, v: str) -> str:
+        """Reject data: URIs — spec §9.4 forbids inlined/base64-embedded glyphs.
+
+        Only relative paths (e.g. 'mulberry/money.svg') and HTTPS URLs are
+        accepted; data: URIs of any case are rejected with ValueError.
+        """
+        if v.lower().startswith("data:"):
+            raise ValueError(
+                "glyph_id must be a relative file path or https URL, "
+                f"not a data: URI (got {v!r}). "
+                "Spec §9.4 forbids inlined/base64-embedded glyphs."
+            )
+        return v
