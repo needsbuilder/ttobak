@@ -11,6 +11,7 @@ import argparse
 import json
 import re
 import subprocess
+import sys
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -140,6 +141,7 @@ _PII_LABELS: frozenset[str] = frozenset({"korean-rrn"})
 _SCAN_EXCLUDE_DIRS: frozenset[str] = frozenset({
     ".git", ".github", "__pycache__", ".pytest_cache", ".mypy_cache",
     "node_modules", "dist", "build", ".venv", "venv", "dev-only", "tests", "test",
+    ".superpowers", "docs",
 })
 
 _SCANNABLE_SUFFIXES: frozenset[str] = frozenset({
@@ -184,9 +186,13 @@ def check_no_secrets(root: Path) -> list[LicenseViolation]:
 
 def collect_installed_licenses() -> list[dict]:
     """Run pip-licenses and return its JSON. The only live-tooling call;
-    tests inject packages instead. Requires the `audit` extra."""
+    tests inject packages instead. Requires the `audit` extra.
+
+    Uses sys.executable so pip-licenses interrogates the *same* Python
+    environment that is running the audit — not an ambient global install.
+    """
     proc = subprocess.run(
-        ["pip-licenses", "--format=json", "--with-system", "--with-urls"],
+        [sys.executable, "-m", "piplicenses", "--format=json", "--with-system", "--with-urls"],
         capture_output=True, text=True, check=True)
     return json.loads(proc.stdout)
 
