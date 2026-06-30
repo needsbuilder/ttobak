@@ -61,3 +61,10 @@ def test_document_meta_defaults_to_empty_dict():
     doc = Document(blocks=[], source_mime="text/plain")
     assert doc.meta == {}
     assert doc.text() == ""
+
+
+def test_document_meta_is_per_instance():
+    doc1 = Document(blocks=[], source_mime="text/plain")
+    doc2 = Document(blocks=[], source_mime="text/plain")
+    doc1.meta["key"] = "value"
+    assert "key" not in doc2.meta
