@@ -46,7 +46,7 @@ where = ["."]
 include = ["ttobak*"]
 
 [tool.setuptools.package-data]
-ttobak = ["data/*.txt"]
+ttobak = ["templates/*.j2", "data/*.txt"]
 
 [tool.pytest.ini_options]
 minversion = "8.0"
