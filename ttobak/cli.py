@@ -23,6 +23,9 @@ def _build_parser() -> argparse.ArgumentParser:
     web.add_argument("--provider", default=None,
                      help="LLM 프로바이더 이름 (anthropic|fake). 미지정 시 $TTOBAK_PROVIDER 또는 anthropic")
     web.add_argument("--share", action="store_true", help="Gradio 공개 링크 생성")
+
+    audit_p = sub.add_parser("audit", help="라이선스·보안 게이트 실행 (spec 14.5)")
+    audit_p.add_argument("--root", default=".", help="스캔할 레포 루트 (기본: 현재 디렉터리)")
     return parser
 
 
@@ -33,6 +36,10 @@ def main(argv: list[str] | None = None) -> int:
     if args.command == "web":
         _serve(args.host, args.port, args.provider, args.share)
         return 0
+
+    if args.command == "audit":
+        from tooling import check_licenses
+        return check_licenses.main(["--root", args.root])
 
     parser.print_help()
     return 1
