@@ -7,7 +7,10 @@ unit-testable with planted fixtures.
 """
 from __future__ import annotations
 
+import argparse
+import json
 import re
+import subprocess
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -175,3 +178,45 @@ def check_no_secrets(root: Path) -> list[LicenseViolation]:
                 kind = "pii" if label in _PII_LABELS else "secret"
                 violations.append(LicenseViolation(kind, f"{label} in {rel}"))
     return violations
+
+
+# --- orchestration + entrypoint (spec 14.5) --------------------------------
+
+def collect_installed_licenses() -> list[dict]:
+    """Run pip-licenses and return its JSON. The only live-tooling call;
+    tests inject packages instead. Requires the `audit` extra."""
+    proc = subprocess.run(
+        ["pip-licenses", "--format=json", "--with-system", "--with-urls"],
+        capture_output=True, text=True, check=True)
+    return json.loads(proc.stdout)
+
+
+def run_audit(root: Path, packages: list[dict] | None = None) -> list[LicenseViolation]:
+    """Run all three gates and return the combined violation list."""
+    if packages is None:
+        packages = collect_installed_licenses()
+    violations: list[LicenseViolation] = []
+    violations.extend(check_license_allowlist(packages))
+    violations.extend(check_assets_separation(root))
+    violations.extend(check_no_secrets(root))
+    return violations
+
+
+def main(argv: list[str] | None = None) -> int:
+    parser = argparse.ArgumentParser(prog="ttobak-audit", description="License & security gate (spec 9.5 / 14.5).")
+    parser.add_argument("--root", default=".", help="Repository root to scan (default: current directory).")
+    args = parser.parse_args(argv)
+    root = Path(args.root).resolve()
+
+    violations = run_audit(root)
+    if violations:
+        print(f"FAIL: {len(violations)} license/security violation(s):")
+        for v in violations:
+            print(f"  [{v.kind}] {v.detail}")
+        return 1
+    print("PASS: license & security audit clean.")
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())
