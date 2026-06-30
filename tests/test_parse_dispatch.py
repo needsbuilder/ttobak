@@ -34,8 +34,8 @@ def test_parse_routes_markdown_mime_to_text_parser():
 
 def test_parse_raises_on_unsupported_mime():
     with pytest.raises(UnsupportedMimeError) as exc:
-        parse(b"%PDF-1.7", "application/pdf")
-    assert "application/pdf" in str(exc.value)
+        parse(b"whatever", "application/zip")
+    assert "application/zip" in str(exc.value)
 
 
 def test_parse_first_block_is_paragraph_for_single_line():
