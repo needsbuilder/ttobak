@@ -1,0 +1,7 @@
+[
+  {"Name": "ttobak", "Version": "0.1.0", "License": "Apache Software License"},
+  {"Name": "pypdf", "Version": "4.3.1", "License": "BSD License"},
+  {"Name": "pydantic", "Version": "2.8.2", "License": "MIT License"},
+  {"Name": "konlpy", "Version": "0.6.0", "License": "GNU General Public License v3 (GPLv3)"},
+  {"Name": "pyhwp", "Version": "0.1b15", "License": "GNU Affero General Public License v3"}
+]

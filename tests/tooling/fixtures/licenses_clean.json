@@ -1,0 +1,13 @@
+[
+  {"Name": "ttobak", "Version": "0.1.0", "License": "Apache Software License"},
+  {"Name": "hwp-hwpx-parser", "Version": "1.0.0", "License": "Apache Software License"},
+  {"Name": "olefile", "Version": "0.47", "License": "BSD License"},
+  {"Name": "python-docx", "Version": "1.1.2", "License": "MIT License"},
+  {"Name": "pypdf", "Version": "4.3.1", "License": "BSD License"},
+  {"Name": "pdfminer.six", "Version": "20240706", "License": "MIT License"},
+  {"Name": "kiwipiepy", "Version": "0.18.0", "License": "GNU Lesser General Public License v3 (LGPLv3)"},
+  {"Name": "dateparser", "Version": "1.2.0", "License": "Apache Software License"},
+  {"Name": "pydantic", "Version": "2.8.2", "License": "MIT License"},
+  {"Name": "jinja2", "Version": "3.1.4", "License": "BSD License"},
+  {"Name": "gradio", "Version": "5.0.0", "License": "Apache Software License"}
+]
