@@ -1,13 +1,14 @@
 # HANDOFF — 2026 오픈소스 개발자대회 출품작 "또박(Ttobak)" 설계
 
 ## 현재 작업
-브레인스토밍 → 스펙(승인·커밋) → **구현 계획 완성·커밋 완료**.
+**구현 진행 중** — Task4 리뷰 픽스 완료 (8dcdbd6).
 - 스펙: `docs/superpowers/specs/2026-06-30-ttobak-easy-read-engine-design.md` (15절, critic 14건 반영).
-- 계획: `docs/superpowers/plans/2026-06-30-ttobak-mvp.md` (**63 TDD 태스크, 3 Phase**; M0~M11; 레드팀 ready:true, stale 교차참조 4건 수정 완료). Phase1 Tasks 1~20=코어 골격(텍스트 입력 end-to-end), Phase2 21~35=K-ER+Fidelity, Phase3 36~63=렌더·PDF/HWPX·웹·평가·라이선스CI.
-- 브랜치 `docs/ttobak-design-spec`, **미푸시**. 공유 계약(IR/타입/6개 공개 시그니처)은 계획 상단에 고정.
+- 계획: `docs/superpowers/plans/2026-06-30-ttobak-mvp.md` (**63 TDD 태스크, 3 Phase**; M0~M11). Phase1 Tasks 1~20=코어 골격(텍스트 입력 end-to-end).
+- 브랜치 `impl/ttobak-mvp`. Task4 assets-guard 리뷰 픽스 커밋 완료 (#1 전체 파일 스캔, #3 대소문자 무감, #4 상대 경로 skip). 테스트 19/19 통과.
+- 각 Task 리포트: `.superpowers/sdd/task-N-report.md`
 
-## 다음 스텝 — 사용자가 실행 방식 선택
-(1) **subagent-driven-development**(권장: 태스크별 새 서브에이전트 + 2단계 검토) 또는 (2) **executing-plans**(인라인 배치 실행). 선택 시 해당 superpowers 스킬로 구현 착수. 착수 전 셋업: 깨끗한 venv → `pip install -e .[dev]` → Phase1 Task1(레포 스캐폴드)부터. 코어+웹이 MVP 보장, MCP·OCR·픽토그램 시맨틱·모델층 K-ER는 스트레치.
+## 다음 스텝
+Task5+ (리더 파이프라인) 계속 실행. subagent-driven-development 또는 executing-plans로 진행.
 
 ## 확정된 프로젝트
 **또박(Ttobak)** — 어려운 한국어 공공·생활 문서(공문·고지서)를 "쉬운 정보(Easy-Read)"로 바꾸고 *쉬움을 측정해 스스로 교정*하는 오픈소스 엔진. 트랙=자유과제(AI), 일반부문 솔로.
