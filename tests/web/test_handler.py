@@ -17,6 +17,10 @@ def test_handler_returns_three_strings_from_text():
     )
     assert isinstance(html, str) and html.strip()
     assert "<" in html and ">" in html
+    # The renderer MUST always include the '원문 우선' disclaimer (spec 3.1 / 8.7).
+    assert "원문이 우선" in html, "render_html must embed the source-precedence disclaimer"
+    # The source text must appear in the rendered side-by-side view.
+    assert "어르신" in html, "render_html must embed the source text"
     assert isinstance(ker_badge, str) and "K-ER" in ker_badge
     assert isinstance(fid_badge, str) and fid_badge.strip()
 
