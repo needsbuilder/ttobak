@@ -81,6 +81,52 @@ def _fidelity_badge(verdict: Verdict) -> str:
     return _FIDELITY_LABEL.get(verdict, "검수 필요 ⚠️")
 
 
+_DISCLAIMER = (
+    "쉬운본은 자동 변환된 보조 자료이며, 법적 효력은 원문이 우선합니다. "
+    "숫자·날짜·금액·기한은 반드시 원문으로 다시 확인하세요."
+)
+
+_INTRO = (
+    "# 또박 (Ttobak) — 쉬운 정보 변환 데모\n"
+    "어려운 공공·행정 문서를 쉬운 글로 바꾸고, 쉬움(K-ER)과 "
+    "사실충실성(Fidelity)을 함께 측정합니다."
+)
+
+
+def build_app(provider: "LLMProvider | None" = None) -> "gr.Blocks":
+    """Gradio 데모를 구성해 Blocks 를 반환한다(launch 는 호출자 책임)."""
+    import gradio as gr
+
+    from ttobak.web.provider import make_provider
+
+    bound_provider = provider if provider is not None else make_provider()
+
+    def _on_click(text_input: str, file_obj, level_label: str):
+        return simplify_handler(text_input, file_obj, level_label, bound_provider)
+
+    with gr.Blocks(title="또박 Ttobak", analytics_enabled=False) as demo:
+        gr.Markdown(_INTRO)
+        with gr.Row():
+            with gr.Column(scale=1):
+                with gr.Tab("텍스트 붙여넣기"):
+                    text_input = gr.Textbox(label="원문 텍스트", lines=10,
+                                            placeholder="여기에 공문·고지서·안내문 내용을 붙여넣으세요.")
+                with gr.Tab("파일 업로드 (PDF·HWPX)"):
+                    file_input = gr.File(label="문서 업로드", file_types=[".pdf", ".hwpx", ".hwp", ".txt"])
+                level_input = gr.Radio(choices=list(LEVEL_CHOICES.keys()),
+                                       value=next(iter(LEVEL_CHOICES)), label="출력 등급")
+                run_btn = gr.Button("변환", variant="primary")
+                ker_out = gr.Label(label="K-ER (쉬움 지표 · 규칙 기반·미검증)")
+                fid_out = gr.Label(label="Fidelity (사실충실성 게이트)")
+            with gr.Column(scale=2):
+                html_out = gr.HTML(label="결과 (원문 · 쉬운본 나란히)")
+        gr.Markdown(f"> ⚖️ **면책**: {_DISCLAIMER}")
+
+        run_btn.click(fn=_on_click, inputs=[text_input, file_input, level_input],
+                      outputs=[html_out, ker_out, fid_out])
+    return demo
+
+
 def simplify_handler(text_input: str, file_obj, level_label: str, provider: LLMProvider) -> tuple[str, str, str]:
     """Gradio 버튼 핸들러 — (html, ker_badge, fidelity_badge) 반환.
 
