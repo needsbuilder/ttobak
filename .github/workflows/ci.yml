@@ -33,3 +33,19 @@ jobs:
       - name: Gate 3 - /assets separation
         run: |
           python -c "import sys; from scripts.check_assets_separation import find_asset_leaks; leaks = find_asset_leaks('.'); print('asset leaks:', leaks); sys.exit(1 if leaks else 0)"
+
+  license-audit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install package with audit extra
+        run: |
+          python -m pip install -e ".[dev]"
+          python -m pip install -e ".[audit]"
+      - name: Run checker unit tests (incl. planted-GPL fail-closed proof)
+        run: python -m pytest tests/tooling -q
+      - name: License & security gate (fails on GPL/AGPL/NC, asset leak, secrets)
+        run: python -m tooling.check_licenses --root .
