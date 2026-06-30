@@ -14,6 +14,7 @@ from ttobak.fidelity.models import Slot
 from ttobak.ir import Document
 from ttobak.levels import Level
 from ttobak.metric.models import Violation
+from ttobak.pictogram import match
 from ttobak.providers.base import LLMProvider
 from ttobak.result import EasyReadResult
 
@@ -99,6 +100,14 @@ def build_revise_prompt(
     )
 
 
+def _final_verdict(fidelity_verdict: Verdict, revisions: int, max_revise: int) -> Verdict:
+    """A REVISE that survives the loop (residual failure after max_revise)
+    escalates to HUMAN_REVIEW (spec 6.8 case d)."""
+    if fidelity_verdict == Verdict.REVISE:
+        return Verdict.HUMAN_REVIEW
+    return fidelity_verdict
+
+
 def _ref_date(doc: Document) -> date:
     raw = doc.meta.get("ref_date")
     if isinstance(raw, date):
@@ -119,7 +128,7 @@ def simplify(
     source_text = doc.text()
 
     prompt = build_generate_prompt(source_text, level)
-    easy_text = provider.generate(prompt, system=GENERATE_SYSTEM)
+    easy_text = provider.generate(prompt, system=GENERATE_SYSTEM).strip()
 
     ker = score(easy_text, level, source_text)
     fidelity = verify(doc, easy_text, ref_date)
@@ -129,17 +138,19 @@ def simplify(
         revise_prompt = build_revise_prompt(
             source_text, easy_text, level, ker.violations, fidelity.failed_slots
         )
-        easy_text = provider.generate(revise_prompt, system=REVISE_SYSTEM)
+        easy_text = provider.generate(revise_prompt, system=REVISE_SYSTEM).strip()
         revisions += 1
         ker = score(easy_text, level, source_text)
         fidelity = verify(doc, easy_text, ref_date)
 
+    verdict = _final_verdict(fidelity.verdict, revisions, max_revise)
     return EasyReadResult(
         source=doc,
         easy_text=easy_text,
         level=level,
         ker=ker,
         fidelity=fidelity,
+        pictograms=match(easy_text),
         revisions=revisions,
-        verdict=fidelity.verdict,
+        verdict=verdict,
     )

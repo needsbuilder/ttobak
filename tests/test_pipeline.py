@@ -91,7 +91,7 @@ def test_simplify_respects_max_revise_when_never_passing(monkeypatch):
 
     assert result.revisions == 2
     assert len(provider.calls) == 3            # 1 generate + 2 revise, no more
-    assert result.verdict is Verdict.REVISE    # final verdict carried through (Task 34 escalates this to HUMAN_REVIEW)
+    assert result.verdict is Verdict.HUMAN_REVIEW    # residual REVISE escalated to HUMAN_REVIEW (spec 6.8 case d)
 
 
 def test_simplify_human_review_no_revision(monkeypatch):
