@@ -1,11 +1,17 @@
 """Plain-text and markdown-ish parser into the Ttobak IR.
 
 Text is the PRIMARY, trusted input tier (spec §7.1): extraction confidence is
-always 1.0 because no lossy extraction occurs.
+always 1.0 because no lossy extraction occurs. Detects markdown ATX headings,
+bullet/numbered list items, and groups remaining lines into paragraphs.
 """
 from __future__ import annotations
 
+import re
+
 from ttobak.ir import Block, BlockType, Document
+
+_HEADING_RE = re.compile(r"^(#{1,6})\s+(.*)$")
+_LIST_RE = re.compile(r"^\s*([-*•]|\d+[.)])\s+\S")
 
 
 class UnsupportedMimeError(ValueError):
@@ -17,10 +23,60 @@ class UnsupportedMimeError(ValueError):
 
 
 def parse_text(text: str, mime: str) -> Document:
-    """Parse plain text into a single-paragraph Document (placeholder body).
+    """Parse plain/markdown text into structured IR blocks.
 
-    Replaced with full heading/list detection in Task 9. Kept minimal
-    here so the dispatcher task is independently testable.
+    - ``#``..``######`` lines -> HEADING (level = number of hashes).
+    - ``-``/``*``/``•``/``1.``/``1)`` lines -> LIST_ITEM (original line, stripped).
+    - Consecutive remaining non-blank lines -> one PARAGRAPH (joined by newlines).
+    - Blank lines separate paragraphs and are not emitted as blocks.
+
+    All blocks carry confidence 1.0 (trusted text tier).
     """
-    block = Block(type=BlockType.PARAGRAPH, text=text, confidence=1.0)
-    return Document(blocks=[block], source_mime=mime)
+    blocks: list[Block] = []
+    paragraph_lines: list[str] = []
+
+    def flush_paragraph() -> None:
+        if paragraph_lines:
+            blocks.append(
+                Block(
+                    type=BlockType.PARAGRAPH,
+                    text="\n".join(paragraph_lines),
+                    confidence=1.0,
+                )
+            )
+            paragraph_lines.clear()
+
+    for raw_line in text.split("\n"):
+        line = raw_line.rstrip()
+        if not line.strip():
+            flush_paragraph()
+            continue
+
+        heading = _HEADING_RE.match(line)
+        if heading is not None:
+            flush_paragraph()
+            blocks.append(
+                Block(
+                    type=BlockType.HEADING,
+                    text=heading.group(2).strip(),
+                    level=len(heading.group(1)),
+                    confidence=1.0,
+                )
+            )
+            continue
+
+        if _LIST_RE.match(line):
+            flush_paragraph()
+            blocks.append(
+                Block(
+                    type=BlockType.LIST_ITEM,
+                    text=line.strip(),
+                    confidence=1.0,
+                )
+            )
+            continue
+
+        paragraph_lines.append(line.strip())
+
+    flush_paragraph()
+    return Document(blocks=blocks, source_mime=mime)
