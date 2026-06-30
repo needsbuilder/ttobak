@@ -74,7 +74,7 @@ def test_simplify_revises_once_then_passes(monkeypatch):
     assert len(provider.calls) == 2
     revise_prompt = provider.calls[1]["prompt"]
     assert "1,295,400원" in revise_prompt
-    assert "의역 금지" in revise_prompt
+    assert "그대로" in revise_prompt
     assert result.easy_text == "건강보험료 1,295,400원을 2026년 7월 17일까지 내세요."
 
 
