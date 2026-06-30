@@ -6,6 +6,10 @@ from typing import Callable
 
 from pydantic import BaseModel
 
+from ttobak.common import Verdict
+from ttobak.fidelity.models import FidelityReport
+from ttobak.ir import Block, BlockType, Document
+
 
 class DistortionType(str, Enum):
     """Injected-distortion taxonomy (spec 6.9). 10 distortions + clean control."""
@@ -105,3 +109,69 @@ def generate_distortions(source_text: str, easy_text: str, *, ref_date: date, se
         case_id=f"{seed}-clean", source_text=source_text, easy_text=easy_text,
         distorted_text=easy_text, distortion_type=DistortionType.CLEAN, is_clean=True, expected_pass=True))
     return cases
+
+
+class BenchResult(BaseModel):
+    per_type_recall: dict[str, float]
+    clean_fp_rate: float
+    pass_residual_distortion_rate: float
+    overall_precision: float
+    overall_recall: float
+    overall_f1: float
+    n_cases: int
+    n_clean: int
+    confusion: dict[str, int]
+
+
+def _wrap_as_document(text: str) -> Document:
+    return Document(source_mime="text/plain", blocks=[Block(type=BlockType.PARAGRAPH, text=text)])
+
+
+def run_distortion_bench(cases: list[DistortionCase],
+                         verify_fn: Callable[[Document, str, date], FidelityReport],
+                         *, ref_date: date) -> BenchResult:
+    """Score a fidelity gate against labeled injected distortions (spec 6.9).
+
+    A case is "flagged" when the gate verdict is not PASS. Distortions SHOULD be
+    flagged; clean controls SHOULD pass. Reports per-type recall, clean-control
+    FP rate, PASS residual-distortion rate, and overall P/R/F1. ``verify_fn`` is
+    injected so CI is deterministic.
+    """
+    per_type_total: dict[str, int] = {}
+    per_type_caught: dict[str, int] = {}
+    tp = fn = fp = tn = 0
+    n_clean = n_distortion = residual = 0
+
+    for case in cases:
+        report = verify_fn(_wrap_as_document(case.source_text), case.distorted_text, ref_date)
+        flagged = report.verdict != Verdict.PASS
+        if case.is_clean:
+            n_clean += 1
+            if flagged:
+                fp += 1
+            else:
+                tn += 1
+            continue
+        n_distortion += 1
+        key = case.distortion_type.value
+        per_type_total[key] = per_type_total.get(key, 0) + 1
+        if flagged:
+            tp += 1
+            per_type_caught[key] = per_type_caught.get(key, 0) + 1
+        else:
+            fn += 1
+            residual += 1
+
+    per_type_recall = {k: per_type_caught.get(k, 0) / per_type_total[k] for k in per_type_total}
+    clean_fp_rate = (fp / n_clean) if n_clean else 0.0
+    pass_residual = (residual / n_distortion) if n_distortion else 0.0
+    precision = (tp / (tp + fp)) if (tp + fp) else 0.0
+    recall = (tp / (tp + fn)) if (tp + fn) else 0.0
+    f1 = (2 * precision * recall / (precision + recall)) if (precision + recall) else 0.0
+
+    return BenchResult(
+        per_type_recall=per_type_recall, clean_fp_rate=clean_fp_rate,
+        pass_residual_distortion_rate=pass_residual, overall_precision=precision,
+        overall_recall=recall, overall_f1=f1, n_cases=len(cases), n_clean=n_clean,
+        confusion={"distortion_caught_tp": tp, "distortion_missed_fn": fn,
+                   "clean_flagged_fp": fp, "clean_passed_tn": tn})
