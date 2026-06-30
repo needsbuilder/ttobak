@@ -82,7 +82,7 @@ _LATIN_RE = re.compile(r"[A-Za-z]")
 _ABBREV_RE = re.compile(r"\b[A-Z]{2,}\b")
 _PERCENT_RE = re.compile(r"\d+\s*%")
 _BIGNUM_RE = re.compile(r"\d[\d,]{5,}")  # ≥6 digits (i.e. ≥100,000)
-_NEG_LEXEMES = frozenset(["안", "못", "없", "말", "아니", "불가", "금지", "제외"])
+_NEG_LEXEMES = frozenset(["안", "못", "없", "않", "말", "아니", "아니하", "불가", "금지", "제외"])
 _PASSIVE_FORMS = frozenset(["되", "지다", "받다", "당하다"])
 _3RD_PERSON = frozenset(["그", "그녀"])
 _DIRECT_ADDRESS = frozenset(["당신", "여러분", "우리"])
@@ -207,13 +207,20 @@ def rule_hard_word_ratio(text: str, tokens: list[Token]) -> RuleResult:
 # ---------------------------------------------------------------------------
 
 def rule_hanja_loanword_ratio(text: str, tokens: list[Token]) -> RuleResult:
-    """R-03: Sino-Korean / loanword density (CJK + Latin). (spec §5.1 R-03)"""
+    """R-03: Sino-Korean / loanword density (hard_terms list + CJK + Latin). (spec §5.1 R-03)
+
+    Modern Korean admin text writes Sino-Korean (한자어) in Hangul script (AC00–D7A3),
+    which falls below U+F900 and is NOT matched by CJK codepoint ranges. We therefore
+    use membership in _HARD_TERMS (loaded from hard_terms.txt) as the primary Sino-Korean
+    proxy, supplemented by CJK-codepoint and Latin-script matches for mixed-script forms.
+    """
+    _ensure_loaded()
     nouns = _noun_tokens(tokens)
     if not nouns:
         return RuleResult(sub_score=100.0, violations=[])
     flagged = [
         t for t in nouns
-        if _CJK_RE.search(t.form) or _LATIN_RE.search(t.form)
+        if t.form in _HARD_TERMS or _CJK_RE.search(t.form) or _LATIN_RE.search(t.form)
     ]
     ratio = len(flagged) / len(nouns)
     sub_score = max(0.0, 100.0 - ratio * 200.0)

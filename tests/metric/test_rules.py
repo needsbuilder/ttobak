@@ -39,10 +39,37 @@ def test_negation_ratio_flags_negation():
     assert r.violations
 
 
+def test_negation_ratio_flags_anh_contracted_form():
+    """Regression: '않' (contracted ~아니하다) must be detected as negation (R-06 false-negative fix)."""
+    # 내지 않으면 돈을 더 내야 합니다 — '않' is the dominant colloquial negation form
+    tokens = [
+        Token("내지", "VV"),
+        Token("않", "VX"),
+        Token("으면", "EC"),
+        Token("돈", "NNG"),
+        Token("을", "JKO"),
+        Token("더", "MAG"),
+        Token("내야", "VV"),
+        Token("합니다", "VX"),
+    ]
+    r = rule_negation_ratio("내지 않으면 돈을 더 내야 합니다.", tokens)
+    assert r.violations, "'않' should be flagged as a negation lexeme"
+
+
 def test_hanja_loanword_ratio_high_for_sino_korean_heavy():
-    tokens = [Token("납부", "NNG"), Token("의무", "NNG"), Token("이행", "NNG"), Token("기한", "NNG")]
-    r = rule_hanja_loanword_ratio("납부 의무 이행 기한", tokens)
-    assert 0.0 <= r.sub_score <= 100.0
+    """R-03: Sino-Korean heavy text must score lower than native Korean nouns."""
+    # Sino-Korean admin vocabulary (all in hard_terms.txt)
+    sino_tokens = [Token("납부", "NNG"), Token("의무", "NNG"), Token("이행", "NNG"), Token("산정", "NNG")]
+    r_sino = rule_hanja_loanword_ratio("납부 의무 이행 산정", sino_tokens)
+
+    # Native Korean nouns (not in hard_terms.txt)
+    native_tokens = [Token("돈", "NNG"), Token("집", "NNG"), Token("물", "NNG"), Token("밥", "NNG")]
+    r_native = rule_hanja_loanword_ratio("돈 집 물 밥", native_tokens)
+
+    assert r_sino.sub_score < r_native.sub_score, (
+        f"Sino-Korean heavy text ({r_sino.sub_score}) should score lower "
+        f"than native Korean nouns ({r_native.sub_score})"
+    )
 
 
 def test_all_rules_is_list_of_name_fn_pairs():
