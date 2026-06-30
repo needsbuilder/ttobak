@@ -105,3 +105,68 @@ def normalize_money(text: str) -> int:
     '약 3억 원'->300000000.
     """
     return normalize_korean_number(text)
+
+
+from datetime import date, timedelta
+
+# Boundary-operator table (spec 6.4 / 14.1). Generator must not weaken these.
+BOUNDARY_OPERATORS: dict[str, str] = {
+    "이상": ">=",
+    "초과": ">",
+    "이하": "<=",
+    "미만": "<",
+    "까지": "inclusive",
+    "부터": "from",
+}
+
+_DATE_YMD = re.compile(r"(\d{4})\s*[년.\-/]\s*(\d{1,2})\s*[월.\-/]\s*(\d{1,2})\s*일?")
+_DATE_REL_DMINUS = re.compile(r"D\s*-\s*(\d+)")
+_DATE_REL_AFTER = re.compile(r"(\d+)\s*일\s*(?:후|뒤|이내)")
+_PHONE_KEEP = re.compile(r"\d")
+
+
+def normalize_date(text: str, ref_date: date) -> tuple[str, bool]:
+    """Normalize an absolute or relative Korean date to (ISO-8601, inclusive).
+
+    ``inclusive`` is True only when the span carries '까지' WITHOUT a
+    weakening '전'/'이전' qualifier. Relative forms 'D-N' and 'N일 후/뒤/이내'
+    resolve against ``ref_date`` (spec failure-mode 4: RELATIVE_BASE = document date).
+    """
+    s = text.strip()
+    has_kkaji = "까지" in s
+    has_before = ("전" in s) or ("이전" in s)
+    inclusive = has_kkaji and not has_before
+
+    m = _DATE_YMD.search(s)
+    if m:
+        y, mo, d = int(m.group(1)), int(m.group(2)), int(m.group(3))
+        return date(y, mo, d).isoformat(), inclusive
+
+    m = _DATE_REL_DMINUS.search(s)
+    if m:
+        return (ref_date + timedelta(days=int(m.group(1)))).isoformat(), inclusive
+
+    m = _DATE_REL_AFTER.search(s)
+    if m:
+        return (ref_date + timedelta(days=int(m.group(1)))).isoformat(), inclusive
+
+    raise ValueError(f"unparsable date: {text!r}")
+
+
+def normalize_phone(text: str) -> str:
+    """Reduce a phone/contact number to a digits-only canonical form."""
+    digits = "".join(_PHONE_KEEP.findall(text))
+    if not digits:
+        raise ValueError(f"no phone digits in {text!r}")
+    return digits
+
+
+def detect_boundary(text: str) -> str | None:
+    """Return the boundary-operator symbol present in ``text``, else None.
+
+    Iterates the table so '이상'/'이하' keys match before bare substrings.
+    """
+    for keyword, symbol in BOUNDARY_OPERATORS.items():
+        if keyword in text:
+            return symbol
+    return None
