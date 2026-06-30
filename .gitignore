@@ -1,0 +1,17 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.eggs/
+build/
+dist/
+.pytest_cache/
+.venv/
+venv/
+.env
+
+# Spec §8.5: private, non-redistributable evaluation material — never commit
+dev-only/
+
+# OS
+.DS_Store

@@ -1,0 +1,49 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "ttobak"
+version = "0.1.0"
+description = "Open-source Korean Easy-Read engine: measures easiness (K-ER) and preserves facts via a fidelity gate."
+readme = "README.md"
+requires-python = ">=3.11"
+license = { text = "Apache-2.0" }
+authors = [{ name = "Ttobak contributors" }]
+keywords = ["korean", "easy-read", "accessibility", "readability", "nlp"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "License :: OSI Approved :: Apache Software License",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Natural Language :: Korean",
+    "Topic :: Text Processing :: Linguistic",
+]
+dependencies = [
+    "pydantic>=2.6,<3",
+    "kiwipiepy>=0.17,<0.21",
+    "pypdf>=4.0,<6",
+    "pdfminer.six>=20231228",
+    "hwp-hwpx-parser==1.0.0",
+    "dateparser>=1.2,<2",
+    "jinja2>=3.1,<4",
+    "gradio>=4.44,<6",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0,<9",
+    "pip-licenses>=5.0,<6",
+]
+
+[project.urls]
+Homepage = "https://github.com/ttobak/ttobak"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["ttobak*"]
+
+[tool.pytest.ini_options]
+minversion = "8.0"
+addopts = "-ra"
+testpaths = ["tests"]
