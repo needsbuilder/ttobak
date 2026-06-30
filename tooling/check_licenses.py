@@ -115,3 +115,63 @@ def check_assets_separation(root: Path) -> list[LicenseViolation]:
             if set_dir.exists() and not (set_dir / "LICENSE").exists():
                 violations.append(LicenseViolation("asset-missing-license", f"assets/pictograms/{set_name}"))
     return violations
+
+
+# --- secrets / PII scan (spec 14.5, 3.2, 8.2) -------------------------------
+
+# (label, regex). All labels except korean-rrn classify as "secret"; rrn = PII.
+SECRET_PII_PATTERNS: list[tuple[str, str]] = [
+    ("aws-access-key", r"AKIA[0-9A-Z]{16}"),
+    ("anthropic-api-key", r"sk-ant-[A-Za-z0-9_-]{20,}"),
+    ("openai-api-key", r"sk-(?:proj-)?[A-Za-z0-9]{20,}"),
+    ("google-api-key", r"AIza[0-9A-Za-z_-]{35}"),
+    ("slack-token", r"xox[baprs]-[0-9A-Za-z-]{10,}"),
+    ("private-key", r"-----BEGIN (?:RSA |EC |OPENSSH |DSA )?PRIVATE KEY-----"),
+    ("generic-secret-assign",
+     r"(?i)(?:api[_-]?key|secret|password|passwd|token)\s*[:=]\s*['\"][A-Za-z0-9/+_-]{16,}['\"]"),
+    ("korean-rrn", r"(?<!\d)\d{6}-[1-4]\d{6}(?!\d)"),
+]
+
+_PII_LABELS: frozenset[str] = frozenset({"korean-rrn"})
+
+_SCAN_EXCLUDE_DIRS: frozenset[str] = frozenset({
+    ".git", ".github", "__pycache__", ".pytest_cache", ".mypy_cache",
+    "node_modules", "dist", "build", ".venv", "venv", "dev-only", "tests", "test",
+})
+
+_SCANNABLE_SUFFIXES: frozenset[str] = frozenset({
+    ".py", ".pyi", ".txt", ".md", ".json", ".jsonl", ".csv", ".yaml",
+    ".yml", ".toml", ".cfg", ".ini", ".env", ".html", ".js", ".ts",
+    ".pem", ".key", ".sh", "",
+})
+
+_COMPILED_PATTERNS = [(label, re.compile(pattern)) for label, pattern in SECRET_PII_PATTERNS]
+
+
+def _should_scan(path: Path, root: Path) -> bool:
+    parts = path.relative_to(root).parts
+    if any(part in _SCAN_EXCLUDE_DIRS for part in parts):
+        return False
+    return path.suffix.lower() in _SCANNABLE_SUFFIXES
+
+
+def check_no_secrets(root: Path) -> list[LicenseViolation]:
+    """Scan the tree for committed secrets and Korean PII (spec 14.5/3.2/8.2).
+
+    tests/, test/, dev-only/ are excluded so planted fixtures and private
+    evaluation data do not trip the gate.
+    """
+    violations: list[LicenseViolation] = []
+    for path in root.rglob("*"):
+        if not path.is_file() or not _should_scan(path, root):
+            continue
+        try:
+            text = path.read_text(encoding="utf-8", errors="ignore")
+        except OSError:
+            continue
+        rel = path.relative_to(root).as_posix()
+        for label, compiled in _COMPILED_PATTERNS:
+            if compiled.search(text):
+                kind = "pii" if label in _PII_LABELS else "secret"
+                violations.append(LicenseViolation(kind, f"{label} in {rel}"))
+    return violations
