@@ -22,6 +22,7 @@ class SlotType(str, Enum):
     LOCATION = "location"
     QUANTITY = "quantity"
     PERCENTAGE = "percentage"
+    NEGATION = "negation"
 
 
 class Slot(BaseModel):
