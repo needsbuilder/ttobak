@@ -1,0 +1,12 @@
+또박(Ttobak) Corpus — Annotations and Easy-Read Texts
+License: Creative Commons Attribution 4.0 International (CC BY 4.0)
+https://creativecommons.org/licenses/by/4.0/
+
+This license applies to the easy-read texts and annotations authored by the
+또박 project (the "easy" side of each pair, K-ER annotations, and fidelity
+checks). Source-side texts retain their original license as recorded per row
+in pairs.jsonl (source_license) and in SOURCES.csv / NOTICE-sources.md.
+
+You are free to share and adapt this material for any purpose, including
+commercially, provided you give appropriate credit:
+"또박(Ttobak) Korean Easy-Read Corpus, CC BY 4.0".
