@@ -14,7 +14,7 @@ import re
 from pathlib import Path
 
 PICTOGRAM_EXTS = {".svg", ".png", ".jpg", ".jpeg", ".gif", ".webp"}
-_DATA_URI = re.compile(r"data:image/[a-z.+-]+;base64,")
+_DATA_URI = re.compile(r"data:image/[a-z.+-]+;base64,", re.IGNORECASE)
 _SKIP_DIRS = {".git", "__pycache__", ".pytest_cache", ".venv", "venv", "build", "dist"}
 
 
@@ -22,7 +22,10 @@ def _iter_files(root: Path):
     for path in root.rglob("*"):
         if not path.is_file():
             continue
-        if any(part in _SKIP_DIRS or part.endswith(".egg-info") for part in path.parts):
+        # Use RELATIVE parts so skip-dir names in the repo's ancestor path
+        # (e.g. cloned under /home/user/build/...) don't cause silent misses.
+        rel_parts = path.relative_to(root).parts
+        if any(part in _SKIP_DIRS or part.endswith(".egg-info") for part in rel_parts):
             continue
         yield path
 
@@ -42,7 +45,9 @@ def find_asset_leaks(repo_root: Path | str) -> list[str]:
             continue
 
         # Rule 2: no base64/data-URI inlined glyph inside the ttobak/ code tree.
-        if rel.parts and rel.parts[0] == "ttobak" and path.suffix == ".py":
+        # Scans ALL readable text files (not just .py) — a data URI in an
+        # HTML template, JS module, CSS file, etc. is equally a leak.
+        if rel.parts and rel.parts[0] == "ttobak":
             try:
                 text = path.read_text(encoding="utf-8")
             except (UnicodeDecodeError, OSError):
