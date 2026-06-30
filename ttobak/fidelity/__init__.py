@@ -1,15 +1,15 @@
-"""Semantic fidelity verification against source (NLI, slot tracking, drift detection)."""
+"""Fidelity gate module (Phase-1 placeholder stub — replaced by Task 30)."""
 from __future__ import annotations
 
 from datetime import date
 
+from ttobak.common import Verdict
+from ttobak.fidelity.models import FidelityReport, Slot
 from ttobak.ir import Document
-from ttobak.fidelity.models import FidelityReport
+
+__all__ = ["verify", "FidelityReport", "Slot"]
 
 
 def verify(source: Document, easy_text: str, ref_date: date) -> FidelityReport:
-    """Verify fidelity of easy_text against source.
-
-    Stub implementation for Phase 1. Task 34 re-implements with real NLI/slot tracking.
-    """
-    raise NotImplementedError("verify() is implemented in Task 34")
+    """Trivial placeholder Fidelity report — PASS (real gate lands in Task 30)."""
+    return FidelityReport(slots=[], verdict=Verdict.PASS)

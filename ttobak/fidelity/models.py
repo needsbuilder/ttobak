@@ -1,8 +1,4 @@
-"""Fidelity report contract (Task 23 owns the real implementation).
-
-This is a STUB contract used during Phase-1 skeleton (Task 16–20). Task 23 will provide
-the real FidelityReport with NLI-based verification and slot tracking. Do NOT overwrite Task 23's version.
-"""
+"""Fidelity report models (canonical contract)."""
 from __future__ import annotations
 
 from enum import Enum
@@ -13,21 +9,21 @@ from ttobak.common import Severity, Verdict
 
 
 class SlotType(str, Enum):
-    """Named entity / slot types for information extraction."""
-
-    MONEY = "money"
+    NUMERIC = "numeric"
     DATE = "date"
+    MONEY = "money"
+    DURATION = "duration"
+    ELIGIBILITY = "eligibility"
+    AGENCY = "agency"
+    CONTACT = "contact"
     PERSON = "person"
-    ORGANIZATION = "organization"
-    LOCATION = "location"
-    QUANTITY = "quantity"
-    PERCENTAGE = "percentage"
     NEGATION = "negation"
+    CONDITIONAL = "conditional"
+    MODALITY = "modality"
+    SCOPE = "scope"
 
 
 class Slot(BaseModel):
-    """Extracted information slot (e.g., amount, date, name)."""
-
     raw_span: str
     normalized_value: str
     type: SlotType
@@ -37,9 +33,7 @@ class Slot(BaseModel):
 
 
 class FidelityReport(BaseModel):
-    """Semantic fidelity verification result (NLI, slot tracking, drift detection)."""
-
-    slots: list[Slot] = []
+    slots: list[Slot]
     verdict: Verdict
     exact_fail_count: int = 0
     nli_contradictions: list[str] = Field(default_factory=list)
