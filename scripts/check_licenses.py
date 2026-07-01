@@ -22,7 +22,7 @@ ALLOWLIST: set[str] = {
     "isc",
     "mpl",
     "mozilla public license",
-    "lgpl",  # kiwipiepy/soynlp: LGPL used as a separate, unmodified dependency
+    "lgpl",  # kiwipiepy: LGPL used as a separate, unmodified dependency
     "unlicense",
     "zlib",
     "historical permission notice and warning",

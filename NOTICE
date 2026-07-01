@@ -15,18 +15,17 @@ Required attributions follow.
 -----------------------------------------------------------------------------
 Apache-2.0 dependencies (NOTICE aggregation)
 -----------------------------------------------------------------------------
-hwp-hwpx-parser, dateparser, transformers, sentence-transformers,
-pytesseract, opencv-python-headless are licensed under the Apache License 2.0.
+hwp-hwpx-parser and gradio are licensed under the Apache License 2.0.
 Their NOTICE obligations are satisfied by reproducing the Apache License 2.0
 in THIRD_PARTY_LICENSES.md.
 
 -----------------------------------------------------------------------------
 Weak-copyleft (LGPL) — separate dependency, dynamically linked, unmodified
 -----------------------------------------------------------------------------
-kiwipiepy and soynlp are licensed under the GNU Lesser General Public License
-v3 (LGPL-3.0). Ttobak depends on them as separate, unmodified, dynamically
-imported packages and does not modify or statically link their sources. Users
-may relink against modified versions per the LGPL.
+kiwipiepy is licensed under the GNU Lesser General Public License v3
+(LGPL-3.0). Ttobak depends on it as a separate, unmodified, dynamically
+imported package and does not modify or statically link its sources. Users
+may relink against a modified version per the LGPL.
 
 -----------------------------------------------------------------------------
 Model weights

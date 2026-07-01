@@ -2,9 +2,21 @@
 
 Ttobak is licensed under Apache-2.0 (see `LICENSE`). This file enumerates every
 third-party component Ttobak ships, depends on, or documents, per spec §9.1–9.4.
-All entries verified 2026-06-30. Risk: clean / caution / blocker.
+All entries verified 2026-06-30; shipped-closure re-verified 2026-07-01. Risk:
+clean / caution / blocker.
 
 ## Code dependencies (spec 9.1)
+
+> **Shipped vs documented (verified 2026-07-01).** The MVP's actual installed
+> runtime closure is `pyproject.toml [project.dependencies]`: **pydantic,
+> kiwipiepy, pypdf, pdfminer.six, hwp-hwpx-parser, dateparser, jinja2, gradio**
+> — plus optional extras **anthropic, ollama, pip-licenses**. The remaining rows
+> (transformers, sentence-transformers, pytesseract, opencv-python-headless,
+> bert-score, kf-deberta, korean-number/es-hangul, spaCy, fastapi, uvicorn, mcp)
+> are **documented / stretch components not installed or imported in the MVP** —
+> retained for license transparency, not shipped. `dateparser` is declared but
+> currently used only as a documented optional cross-check (stdlib `datetime` is
+> the authoritative date path).
 
 | Component | Package | License | Risk | Source |
 |---|---|---|---|---|
@@ -21,7 +33,7 @@ All entries verified 2026-06-30. Risk: clean / caution / blocker.
 | Transformer framework | transformers | Apache-2.0 | clean | https://github.com/huggingface/transformers |
 | NLI (fidelity) | kf-deberta-base-cross-nli | MIT | clean | https://huggingface.co/deliciouscat/kf-deberta-base-cross-nli |
 | Korean number normalization | korean-number / es-hangul | permissive | clean | https://pypi.org/project/korean-number/ |
-| Date parsing | dateparser | Apache-2.0 | clean | https://github.com/scrapinghub/dateparser |
+| Date parsing | dateparser | BSD-3-Clause | clean | https://github.com/scrapinghub/dateparser |
 | NER (primary) | spaCy ko_core_news_lg | MIT (code) / CC BY-SA 4.0 (model asset) | clean | https://huggingface.co/spacy/ko_core_news_lg |
 | Web API | fastapi | MIT | clean | https://github.com/fastapi/fastapi |
 | ASGI server | uvicorn | BSD-3-Clause | clean | https://github.com/encode/uvicorn |
