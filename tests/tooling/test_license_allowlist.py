@@ -37,3 +37,24 @@ def test_unknown_license_is_flagged_as_review():
     pkgs = [{"Name": "mystery-lib", "Version": "1.0", "License": "UNKNOWN"}]
     violations = check_license_allowlist(pkgs)
     assert len(violations) == 1 and violations[0].kind == "unrecognized-license"
+
+
+def test_known_build_tools_with_unknown_license_are_resolved():
+    # setuptools/pip/wheel ship without a readable License field; pip-licenses
+    # reports UNKNOWN (observed on CI setuptools 79.0.1). They are MIT and must
+    # not fail the gate. Empty license string is treated the same as UNKNOWN.
+    pkgs = [
+        {"Name": "setuptools", "Version": "79.0.1", "License": "UNKNOWN"},
+        {"Name": "pip", "Version": "26.1.1", "License": "UNKNOWN"},
+        {"Name": "wheel", "Version": "0.45.1", "License": ""},
+    ]
+    assert check_license_allowlist(pkgs) == []
+
+
+def test_known_name_override_does_not_mask_real_forbidden_license():
+    # The name-based resolve applies ONLY when the reported license is unknown/
+    # empty. A build tool that actually *reports* a forbidden license is still
+    # flagged — the override never masks a real GPL/AGPL/NC.
+    pkgs = [{"Name": "setuptools", "Version": "9.9", "License": "GPLv3"}]
+    violations = check_license_allowlist(pkgs)
+    assert len(violations) == 1 and violations[0].kind == "forbidden-license"

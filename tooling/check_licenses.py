@@ -37,6 +37,20 @@ FORBIDDEN_LICENSE_SUBSTRINGS: frozenset[str] = frozenset({
     "-nc-", " nc ", "research license", "proprietary",
 })
 
+# Normalized license values that mean "pip-licenses could not read the metadata".
+_UNKNOWN_LICENSE_TOKENS: frozenset[str] = frozenset({"", "unknown", "unknown license"})
+
+# Ubiquitous build/system packages that ship without a readable License field, so
+# `pip-licenses --with-system` reports UNKNOWN (e.g. setuptools 79.0.1 on CI).
+# Values are their real, verifiable licenses. Used ONLY to resolve an
+# unknown/empty reported license — never to override a real one — so the gate
+# stays fail-closed for genuinely unrecognized dependencies.
+KNOWN_SYSTEM_LICENSES: dict[str, str] = {
+    "setuptools": "MIT",
+    "pip": "MIT",
+    "wheel": "MIT",
+}
+
 
 def _normalize(text: str) -> str:
     return " ".join((text or "").lower().replace("(", " ").replace(")", " ").split())
@@ -65,6 +79,13 @@ def check_license_allowlist(packages: list[dict]) -> list[LicenseViolation]:
         raw_license = pkg.get("License", "")
         norm = _normalize(raw_license)
         label = f"{name} {version} [{raw_license}]"
+        # Resolve unreadable metadata for known build/system tools to their real
+        # license (only when reported unknown/empty — never masks a real one).
+        if norm in _UNKNOWN_LICENSE_TOKENS:
+            known = KNOWN_SYSTEM_LICENSES.get((name or "").strip().lower())
+            if known:
+                norm = _normalize(known)
+                label = f"{name} {version} [{raw_license or 'UNKNOWN'} -> {known} (known)]"
         if any(bad in norm for bad in FORBIDDEN_LICENSE_SUBSTRINGS):
             violations.append(LicenseViolation("forbidden-license", label))
             continue
