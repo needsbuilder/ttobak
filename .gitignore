@@ -15,3 +15,6 @@ dev-only/
 
 # OS
 .DS_Store
+
+# Internal working handoff (not a public artifact)
+HANDOFF.md
