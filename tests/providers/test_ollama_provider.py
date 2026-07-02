@@ -60,3 +60,42 @@ def test_generate_omits_system_message_when_none():
 def test_default_model_is_kanana():
     provider = OllamaProvider(client=_FakeOllamaClient("ok"))
     assert provider.model == "kanana-1.5-8b"
+
+
+class _RecordingClientClass:
+    """Stand-in for ``ollama.Client`` that records constructor kwargs.
+
+    Used to verify OllamaProvider passes a timeout without ever touching a
+    real daemon (project rule: no live API/daemon calls in tests).
+    """
+
+    last_kwargs: dict | None = None
+
+    def __init__(self, **kwargs) -> None:
+        type(self).last_kwargs = kwargs
+
+
+def test_constructor_passes_default_timeout_to_client(monkeypatch):
+    monkeypatch.setattr("ollama.Client", _RecordingClientClass)
+    OllamaProvider()
+    assert _RecordingClientClass.last_kwargs["timeout"] == 120
+
+
+def test_constructor_passes_custom_timeout_to_client(monkeypatch):
+    monkeypatch.setattr("ollama.Client", _RecordingClientClass)
+    OllamaProvider(timeout=30)
+    assert _RecordingClientClass.last_kwargs["timeout"] == 30
+
+
+def test_constructor_passes_host_and_timeout_to_client(monkeypatch):
+    monkeypatch.setattr("ollama.Client", _RecordingClientClass)
+    OllamaProvider(host="http://localhost:11434", timeout=60)
+    assert _RecordingClientClass.last_kwargs["host"] == "http://localhost:11434"
+    assert _RecordingClientClass.last_kwargs["timeout"] == 60
+
+
+def test_explicit_client_bypasses_timeout_wiring():
+    """client= 주입 시 ollama 패키지를 아예 import하지 않는 기존 계약 유지."""
+    client = _FakeOllamaClient("ok")
+    provider = OllamaProvider(client=client, timeout=5)
+    assert provider._client is client

@@ -18,8 +18,12 @@ class OllamaProvider:
             alternative: ``qwen2.5:7b`` / ``qwen2.5:14b`` (Apache-2.0).
         host: Optional Ollama host URL (e.g. ``http://localhost:11434``).
             If ``None``, the client resolves it from the environment.
+        timeout: Request timeout in seconds passed to ``ollama.Client``.
+            Default 120. Bug fix: ollama 0.6.2's Client defaults to no
+            timeout at all, so a stuck/unreachable daemon blocked forever.
         client: Optional pre-built ``ollama.Client`` (used by tests to avoid
-            the daemon). When provided, the ``ollama`` package is never imported.
+            the daemon). When provided, the ``ollama`` package is never imported
+            and ``timeout`` is not applied (caller owns the client's config).
     """
 
     def __init__(
@@ -27,6 +31,7 @@ class OllamaProvider:
         *,
         model: str = "kanana-1.5-8b",
         host: str | None = None,
+        timeout: float | int = 120,
         client: object | None = None,
     ) -> None:
         self.model = model
@@ -40,7 +45,7 @@ class OllamaProvider:
                 "OllamaProvider requires the 'ollama' package. "
                 "Install it with: pip install 'ttobak[ollama]'"
             ) from exc
-        self._client = Client(host=host) if host is not None else Client()
+        self._client = Client(host=host, timeout=timeout) if host is not None else Client(timeout=timeout)
 
     def generate(
         self,
