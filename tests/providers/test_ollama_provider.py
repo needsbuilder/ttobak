@@ -1,3 +1,6 @@
+import sys
+import types
+
 import pytest
 
 from ttobak.providers.base import LLMProvider
@@ -75,20 +78,33 @@ class _RecordingClientClass:
         type(self).last_kwargs = kwargs
 
 
+def _stub_ollama(monkeypatch) -> None:
+    """sys.modules에 스텁 ollama 모듈을 주입한다.
+
+    monkeypatch.setattr("ollama.Client", ...)은 실제 ollama 패키지를 import하므로
+    optional extra가 없는 CI에서 ModuleNotFoundError로 죽는다 — 패키지가 없어도
+    lazy-import 경로를 검증할 수 있게 모듈 자체를 스텁으로 대체한다.
+    """
+    _RecordingClientClass.last_kwargs = None
+    stub = types.ModuleType("ollama")
+    stub.Client = _RecordingClientClass
+    monkeypatch.setitem(sys.modules, "ollama", stub)
+
+
 def test_constructor_passes_default_timeout_to_client(monkeypatch):
-    monkeypatch.setattr("ollama.Client", _RecordingClientClass)
+    _stub_ollama(monkeypatch)
     OllamaProvider()
     assert _RecordingClientClass.last_kwargs["timeout"] == 120
 
 
 def test_constructor_passes_custom_timeout_to_client(monkeypatch):
-    monkeypatch.setattr("ollama.Client", _RecordingClientClass)
+    _stub_ollama(monkeypatch)
     OllamaProvider(timeout=30)
     assert _RecordingClientClass.last_kwargs["timeout"] == 30
 
 
 def test_constructor_passes_host_and_timeout_to_client(monkeypatch):
-    monkeypatch.setattr("ollama.Client", _RecordingClientClass)
+    _stub_ollama(monkeypatch)
     OllamaProvider(host="http://localhost:11434", timeout=60)
     assert _RecordingClientClass.last_kwargs["host"] == "http://localhost:11434"
     assert _RecordingClientClass.last_kwargs["timeout"] == 60
