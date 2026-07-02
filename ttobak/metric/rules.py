@@ -81,9 +81,12 @@ _CJK_RE = re.compile(
 _LATIN_RE = re.compile(r"[A-Za-z]")
 _ABBREV_RE = re.compile(r"\b[A-Z]{2,}\b")
 _PERCENT_RE = re.compile(r"\d+\s*%")
-_BIGNUM_RE = re.compile(r"\d[\d,]{5,}")  # ≥6 digits (i.e. ≥100,000)
+_NUM_RE = re.compile(r"\d[\d,]*")  # candidate numeric literal (may contain thousands-commas)
 _NEG_LEXEMES = frozenset(["안", "못", "없", "않", "말", "아니", "아니하", "불가", "금지", "제외"])
-_PASSIVE_FORMS = frozenset(["되", "지다", "받다", "당하다"])
+# kiwipiepy 0.23.x emits stem forms for passive predicates (당하/VV, 받/VV-R, 되/XSV,
+# 지/VX for -아/어지다), not dictionary forms (당하다/받다/지다) — match stems + tag.
+_PASSIVE_FORMS = frozenset(["되", "지", "받", "당하"])
+_PASSIVE_TAG_PREFIXES = frozenset(["XSV", "VV", "VX"])
 _3RD_PERSON = frozenset(["그", "그녀"])
 _DIRECT_ADDRESS = frozenset(["당신", "여러분", "우리"])
 _CONNECTIVE_TAGS = frozenset(["EC"])
@@ -283,13 +286,16 @@ def rule_predicates_connectives(text: str, tokens: list[Token]) -> RuleResult:
 
 def rule_passive_ratio(text: str, tokens: list[Token]) -> RuleResult:
     """R-05: Passive constructions ratio. (spec §5.1 R-05)"""
-    verbs = [t for t in tokens if t.tag in _VERB_TAGS]
+    # Prefix-match tags (tag.split('-')[0]): kiwipiepy emits irregular-conjugation
+    # variants (VV-R/VV-I/VA-I) that never satisfy an exact-set match, which would
+    # otherwise undercount the denominator (same fix as _content_tokens()).
+    verbs = [t for t in tokens if t.tag.split("-")[0] in _VERB_TAGS]
     if not verbs:
         return RuleResult(sub_score=100.0, violations=[])
 
     passive_hits: list[Token] = []
     for i, t in enumerate(tokens):
-        if t.form in _PASSIVE_FORMS and t.tag in {"XSV", "VV"}:
+        if t.form in _PASSIVE_FORMS and t.tag.split("-")[0] in _PASSIVE_TAG_PREFIXES:
             # attach preceding noun as span if available
             passive_hits.append(t)
 
@@ -363,21 +369,53 @@ def rule_negation_ratio(text: str, tokens: list[Token]) -> RuleResult:
 _PAREN_RE = re.compile(r"\(([^)]+)\)")
 
 
-def _is_glossed(term: str, text: str) -> bool:
-    """Return True if *term* appears immediately followed by a parenthetical gloss.
+def _first_gloss_pos(term: str, text: str) -> int | None:
+    """Return the char offset of *term*'s first parenthetical gloss, or None.
 
     Pattern: <term><optional-space>'(' — e.g. '납부(돈을 내는 것)'.
-    This is the correct exemption check for R-07: the TERM before '(' must match
-    the hard token, not the parenthetical content inside '()'.
+    The TERM before '(' must match the hard token, not the parenthetical
+    content inside '()'.
     """
-    return bool(re.search(re.escape(term) + r"\s*\(", text))
+    m = re.search(re.escape(term) + r"\s*\(", text)
+    return m.start() if m else None
 
 
 def rule_undefined_hard_term(text: str, tokens: list[Token]) -> RuleResult:
-    """R-07: Hard specialist terms without explanation. (spec §5.1 R-07)"""
+    """R-07: Hard specialist terms without explanation. (spec §5.1 R-07)
+
+    Exemption is position-aware, not global: once a term is glossed, later bare
+    reuse is exempt (easy-read guidance — explain once, reuse freely), but an
+    occurrence BEFORE the term's first gloss is still a violation. Previously
+    `_is_glossed` checked the whole text, so any gloss anywhere exempted every
+    occurrence of that term regardless of order (bug fix — see tests/metric).
+    """
     _ensure_loaded()
 
-    hard_hits = [t for t in tokens if t.form in _HARD_TERMS and not _is_glossed(t.form, text)]
+    # For each distinct hard term, precompute its left-to-right occurrence
+    # offsets in `text` and the offset of its first gloss (if any). Token
+    # iteration order mirrors text order, so consuming offsets in sequence
+    # maps each token to its occurrence position.
+    occurrence_cursors: dict[str, int] = {}
+    occurrence_positions: dict[str, list[int]] = {}
+    gloss_positions: dict[str, int | None] = {}
+    hard_hits: list[Token] = []
+    for t in tokens:
+        term = t.form
+        if term not in _HARD_TERMS:
+            continue
+        if term not in occurrence_positions:
+            occurrence_positions[term] = [m.start() for m in re.finditer(re.escape(term), text)]
+            occurrence_cursors[term] = 0
+            gloss_positions[term] = _first_gloss_pos(term, text)
+        idx = occurrence_cursors[term]
+        occurrence_cursors[term] += 1
+        positions = occurrence_positions[term]
+        pos = positions[idx] if idx < len(positions) else None
+        gloss_pos = gloss_positions[term]
+        if gloss_pos is not None and pos is not None and pos >= gloss_pos:
+            continue  # exempt: occurs at/after the term's first gloss
+        hard_hits.append(t)
+
     n_nouns = max(1, len(_noun_tokens(tokens)))
     ratio = len(hard_hits) / n_nouns
 
@@ -434,11 +472,27 @@ def rule_idiom(text: str, tokens: list[Token]) -> RuleResult:
 # Each occurrence → 10-point penalty.
 # ---------------------------------------------------------------------------
 
+def _bignum_hits(text: str) -> list[str]:
+    """Find number literals with ≥6 significant digits (i.e. ≥100,000).
+
+    Thousands-commas must not count toward the digit threshold: a naive
+    comma-inclusive regex treats '30,000' (6 characters, but only 5 significant
+    digits) as a big number while the equivalent '30000' is not flagged. Strip
+    commas before counting so both forms agree.
+    """
+    hits = []
+    for m in _NUM_RE.finditer(text):
+        raw = m.group()
+        if len(raw.replace(",", "")) >= 6:
+            hits.append(raw)
+    return hits
+
+
 def rule_abbrev_percent_bignum(text: str, tokens: list[Token]) -> RuleResult:
     """R-09: Abbreviations, %, and large numbers without explanation. (§5.1 R-09)"""
     abbrevs = _ABBREV_RE.findall(text)
     percents = _PERCENT_RE.findall(text)
-    bignums = _BIGNUM_RE.findall(text)
+    bignums = _bignum_hits(text)
 
     all_hits = abbrevs + percents + bignums
     penalty = min(len(all_hits) * 10.0, 100.0)
