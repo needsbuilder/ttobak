@@ -162,7 +162,26 @@ _PII_LABELS: frozenset[str] = frozenset({"korean-rrn"})
 _SCAN_EXCLUDE_DIRS: frozenset[str] = frozenset({
     ".git", ".github", "__pycache__", ".pytest_cache", ".mypy_cache",
     "node_modules", "dist", "build", ".venv", "venv", "dev-only", "tests", "test",
-    ".superpowers", "docs",
+    # .superpowers/sdd/ carries its own nested `.gitignore` (`*`) — everything
+    # under it is local SDD scratch state (task briefs, review diffs) that is
+    # never committed, so it can never ship. Excluding the dir avoids noise
+    # from test-fixture secrets embedded in those briefs (see task-58/59/63).
+    ".superpowers",
+})
+
+# CONFIRMED bypass fix: "docs" was previously a full directory exclusion,
+# meaning a real secret committed anywhere under docs/ would never be
+# scanned. Only pinpoint-exclude the specific known-fixture files (by exact
+# relative path) rather than the whole tree.
+_SCAN_EXCLUDE_FILES: frozenset[str] = frozenset({
+    # Historical dev-plan doc that embeds this module's own test-fixture code
+    # verbatim (AWS's publicly documented placeholder access key, a dummy
+    # PEM body, a placeholder RRN) while narrating how check_no_secrets was
+    # built — not real credentials. Same fixture strings as
+    # .superpowers/sdd/task-58/59/63-*.md (excluded above). NOTE: don't spell
+    # the placeholder key out literally in this file — the regex it's meant
+    # to demonstrate would flag this comment too (self-referential match).
+    "docs/superpowers/plans/2026-06-30-ttobak-mvp.md",
 })
 
 _SCANNABLE_SUFFIXES: frozenset[str] = frozenset({
@@ -175,8 +194,10 @@ _COMPILED_PATTERNS = [(label, re.compile(pattern)) for label, pattern in SECRET_
 
 
 def _should_scan(path: Path, root: Path) -> bool:
-    parts = path.relative_to(root).parts
-    if any(part in _SCAN_EXCLUDE_DIRS for part in parts):
+    rel = path.relative_to(root)
+    if any(part in _SCAN_EXCLUDE_DIRS for part in rel.parts):
+        return False
+    if rel.as_posix() in _SCAN_EXCLUDE_FILES:
         return False
     return path.suffix.lower() in _SCANNABLE_SUFFIXES
 
@@ -184,8 +205,10 @@ def _should_scan(path: Path, root: Path) -> bool:
 def check_no_secrets(root: Path) -> list[LicenseViolation]:
     """Scan the tree for committed secrets and Korean PII (spec 14.5/3.2/8.2).
 
-    tests/, test/, dev-only/ are excluded so planted fixtures and private
-    evaluation data do not trip the gate.
+    tests/, test/, dev-only/, .superpowers/ are excluded so planted fixtures
+    and private evaluation/scratch data do not trip the gate. docs/ is
+    scanned like any other tree; only the specific known-fixture doc in
+    _SCAN_EXCLUDE_FILES is pinpoint-excluded (see comment there).
     """
     violations: list[LicenseViolation] = []
     for path in root.rglob("*"):

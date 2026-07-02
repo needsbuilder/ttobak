@@ -42,3 +42,14 @@ def test_test_fixtures_are_excluded(tmp_path):
     fix.mkdir(parents=True)
     (fix / "planted.py").write_text('KEY = "AKIAIOSFODNN7EXAMPLE"\n', encoding="utf-8")
     assert check_no_secrets(tmp_path) == []
+
+
+# Fix (CONFIRMED) — docs/ must not be blanket-excluded: a real secret planted
+# anywhere under docs/ (other than the pinpointed known-fixture doc) must be
+# caught, not silently skipped by a directory-wide exclusion.
+def test_secret_directly_under_docs_is_flagged(tmp_path):
+    docs = tmp_path / "docs"
+    docs.mkdir()
+    (docs / "notes.md").write_text('KEY = "AKIAIOSFODNN7EXAMPLE"\n', encoding="utf-8")
+    violations = check_no_secrets(tmp_path)
+    assert any("aws-access-key" in v.detail for v in violations)

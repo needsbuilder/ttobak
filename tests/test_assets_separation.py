@@ -66,6 +66,32 @@ def test_detects_pictogram_outside_assets_at_repo_root(tmp_path):
     assert any("logo.svg" in p for p in leaks)
 
 
+# Fix (corpus bypass, CONFIRMED) — Rule 2 scan scope must cover corpus/, not
+# just ttobak/: a base64 glyph hidden in corpus/pairs.jsonl bypasses Rule 1
+# entirely (.jsonl isn't a pictogram extension) and previously passed clean.
+def test_detects_base64_inlined_glyph_in_corpus_jsonl(tmp_path):
+    """A data URI embedded in corpus/pairs.jsonl must be flagged."""
+    (tmp_path / "ttobak").mkdir()
+    (tmp_path / "assets").mkdir()
+    (tmp_path / "corpus").mkdir()
+    line = '{"source_text": "x", "glyph": "data:image/svg+xml;base64,PHN2Zz48L3N2Zz4="}\n'
+    (tmp_path / "corpus" / "pairs.jsonl").write_text(line, encoding="utf-8")
+    leaks = find_asset_leaks(tmp_path)
+    assert any("pairs.jsonl" in p for p in leaks)
+
+
+# Fix (corpus bypass, CONFIRMED) — root-level deployed data files (README,
+# NOTICE, ...) must be scanned too, not just ttobak/.
+def test_detects_base64_inlined_glyph_in_root_data_file(tmp_path):
+    (tmp_path / "ttobak").mkdir()
+    (tmp_path / "assets").mkdir()
+    (tmp_path / "README.md").write_text(
+        "![x](data:image/png;base64,AAAA)\n", encoding="utf-8"
+    )
+    leaks = find_asset_leaks(tmp_path)
+    assert any("README.md" in p for p in leaks)
+
+
 # Fix #4 — skip-dir matching must use relative parts, not absolute path parts
 def test_skip_dirs_use_relative_parts(tmp_path):
     """build/ inside the repo is skipped; a leak elsewhere is still caught (fix #4)."""
