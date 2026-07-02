@@ -98,18 +98,42 @@ def _split_date_value(normalized_value: str) -> tuple[str, bool]:
     return normalized_value, False
 
 
-def _easy_date_inclusivity(easy_text: str, iso: str, ref_date: date) -> bool | None:
+def _ambiguous_month_days(slots: list[Slot]) -> set[tuple[int, int]]:
+    """같은 월-일이 서로 다른 연도로 2회 이상 등장하는 DATE 슬롯의 (월, 일) 집합.
+
+    이 경우 연도가 생략된 쉬운본 날짜는 어느 마감을 가리키는지 알 수 없으므로
+    특정 슬롯의 생존 근거로 쓰면 안 된다 (무연도 표현이 target 연도로 디폴트되어
+    복수 마감일 전부에 매칭 -> 누락이 PASS 되는 게이트 구멍).
+    """
+    years: dict[tuple[int, int], set[int]] = {}
+    for slot in slots:
+        if slot.type != SlotType.DATE:
+            continue
+        iso, _incl = _split_date_value(slot.normalized_value)
+        y, mo, d = (int(p) for p in iso.split("-"))
+        years.setdefault((mo, d), set()).add(y)
+    return {md for md, ys in years.items() if len(ys) >= 2}
+
+
+def _easy_date_inclusivity(easy_text: str, iso: str, ref_date: date,
+                           ambiguous_month_days: set[tuple[int, int]] = frozenset(),
+                           ) -> bool | None:
     """Return the inclusivity the easy text assigns to the date ``iso``.
 
     Scans every month/day span (year optional) in ``easy_text``; for the one
     whose resolved date equals ``iso`` it reports inclusivity from its trailing
     qualifier (까지 -> True, 전/이전 -> False, no qualifier -> False). Returns
     ``None`` when no span resolves to ``iso`` (the date itself is absent).
+
+    연도 생략 표현은 원문에 같은 월-일·다른 연도 마감이 공존하면(``ambiguous_month_days``)
+    매칭에서 배제한다 — 그렇지 않으면 연도가 다른 모든 슬롯에 동시 매칭된다.
     """
     target_y, target_mo, target_d = (int(p) for p in iso.split("-"))
     for m in _DATE_FLEX.finditer(easy_text):
         y_raw, mo_raw, d_raw, qualifier = m.groups()
         mo, d = int(mo_raw), int(d_raw)
+        if y_raw is None and (mo, d) in ambiguous_month_days:
+            continue  # 무연도 표현은 어느 연도를 뜻하는지 판별 불가
         y = int(y_raw) if y_raw else target_y
         if (y, mo, d) != (target_y, target_mo, target_d):
             continue
@@ -130,22 +154,35 @@ def _operand_surface(raw_span: str) -> str:
     return operand.strip()
 
 
-def _easy_boundary_after(easy_text: str, operand: str) -> str | None:
-    """Read the boundary operator keyword that follows ``operand`` in easy text.
+def _operand_occurrences(easy_text: str, operand: str) -> list[int]:
+    """쉬운본 안 오퍼랜드 등장 위치들 (경계 인식).
 
-    Returns the operator SYMBOL (>=, >, <=, <) when a boundary keyword appears
-    within a short window after the operand, '' when the operand is present but
-    carries NO boundary keyword (dropped), or ``None`` when the operand itself
-    is absent.
+    앞에 숫자/콤마가 붙은 매칭은 배제한다 — '5,000명'이 '15,000명'의 꼬리로
+    매칭돼 다른 임계값이 생존 처리되는 것을 막는다.
     """
-    idx = easy_text.find(operand)
-    if idx == -1:
-        return None
-    window = easy_text[idx + len(operand): idx + len(operand) + 8]
-    for kw in _OPERATOR_KEYWORDS:
-        if kw in window:
-            return BOUNDARY_OPERATORS[kw]
-    return ""
+    if not operand:
+        return []
+    pat = re.compile(r"(?<![\d,])" + re.escape(operand))
+    return [m.start() for m in pat.finditer(easy_text)]
+
+
+def _easy_boundary_ops(easy_text: str, operand: str) -> list[str]:
+    """쉬운본에서 ``operand`` 각 등장 직후의 경계 연산자 심볼 목록 (등장 순).
+
+    연산자 키워드가 없으면 ''(삭제됨)로 기록한다. 오퍼랜드 자체가 없으면 빈 목록.
+    (기존 구현은 첫 등장만 검사해, 같은 오퍼랜드가 서로 다른 연산자로 여러 번
+    나오는 문서에서 무손상 쉬운본이 오탐되고 뒤쪽 슬롯의 반전을 놓쳤다.)
+    """
+    ops: list[str] = []
+    for start in _operand_occurrences(easy_text, operand):
+        window = easy_text[start + len(operand): start + len(operand) + 8]
+        for kw in _OPERATOR_KEYWORDS:
+            if kw in window:
+                ops.append(BOUNDARY_OPERATORS[kw])
+                break
+        else:
+            ops.append("")
+    return ops
 
 
 def verify_high_slots(slots: list[Slot], easy_text: str, ref_date: date,
@@ -161,6 +198,7 @@ def verify_high_slots(slots: list[Slot], easy_text: str, ref_date: date,
     money_values = _easy_money_values(easy_text)
     date_values = _easy_date_values(easy_text, ref_date)
     contact_values = _easy_contact_values(easy_text)
+    ambiguous_md = _ambiguous_month_days(slots)
 
     failed: list[Slot] = []
     for slot in slots:
@@ -172,7 +210,7 @@ def verify_high_slots(slots: list[Slot], easy_text: str, ref_date: date,
         elif slot.type == SlotType.DATE:
             iso, _incl = _split_date_value(slot.normalized_value)
             survived = iso in date_values or iso in easy_text or _easy_date_inclusivity(
-                easy_text, iso, ref_date) is not None
+                easy_text, iso, ref_date, ambiguous_md) is not None
         elif slot.type == SlotType.CONTACT:
             survived = slot.normalized_value in contact_values
         elif slot.type == SlotType.SCOPE:
@@ -180,8 +218,9 @@ def verify_high_slots(slots: list[Slot], easy_text: str, ref_date: date,
             # checked in detect_drift_flips. A SCOPE slot whose operand is
             # present is "recovered" here so it never routes to REVISE — its
             # operator integrity is a HUMAN_REVIEW concern, not a verbatim miss.
+            # (경계 인식 매칭 — 다른 수의 부분문자열로 생존 처리되면 안 된다.)
             operand = _operand_surface(slot.raw_span)
-            survived = bool(operand) and operand in easy_text
+            survived = bool(_operand_occurrences(easy_text, operand))
         elif slot.type == SlotType.NUMERIC:
             survived = slot.normalized_value in money_values or slot.normalized_value in easy_text
         else:
@@ -206,6 +245,7 @@ def detect_drift_flips(slots: list[Slot], easy_text: str, ref_date: date) -> lis
         different operator, or the boundary keyword dropped entirely.
     """
     flips: list[str] = []
+    ambiguous_md = _ambiguous_month_days(slots)
     for slot in slots:
         if slot.criticality != Severity.HIGH:
             continue
@@ -214,7 +254,7 @@ def detect_drift_flips(slots: list[Slot], easy_text: str, ref_date: date) -> lis
             iso, src_inclusive = _split_date_value(slot.normalized_value)
             if not src_inclusive:
                 continue  # only an inclusive source deadline can be weakened
-            easy_inclusive = _easy_date_inclusivity(easy_text, iso, ref_date)
+            easy_inclusive = _easy_date_inclusivity(easy_text, iso, ref_date, ambiguous_md)
             if easy_inclusive is None:
                 continue  # date absent -> a recoverable miss, not a flip
             if easy_inclusive != src_inclusive:
@@ -222,20 +262,35 @@ def detect_drift_flips(slots: list[Slot], easy_text: str, ref_date: date) -> lis
                     f"날짜 포함 경계('까지')가 쉬운본에서 약화/반전됨: {iso}"
                 )
 
-        elif slot.type == SlotType.SCOPE:
-            src_symbol = slot.normalized_value
-            if src_symbol not in (">=", ">", "<=", "<"):
+    # SCOPE: 같은 오퍼랜드가 여러 임계값으로 재사용될 수 있으므로 슬롯별
+    # '첫 등장' 비교가 아니라, 오퍼랜드별로 쉬운본의 연산자 목록과 다중집합
+    # 대응을 본다 — 소스 슬롯(오프셋 순)마다 같은 연산자 등장을 하나씩 소비하고,
+    # 소비할 수 없으면 반전/삭제로 판정한다. (한계: 오퍼랜드가 같고 연산자
+    # 다중집합까지 동일한 쌍맞교환 재배치는 탐지 불가 — 문서화된 한계.)
+    scope_slots = sorted(
+        (s for s in slots
+         if s.criticality == Severity.HIGH and s.type == SlotType.SCOPE
+         and s.normalized_value in (">=", ">", "<=", "<")),
+        key=lambda s: s.source_offset,
+    )
+    by_operand: dict[str, list[Slot]] = {}
+    for slot in scope_slots:
+        operand = _operand_surface(slot.raw_span)
+        if operand:
+            by_operand.setdefault(operand, []).append(slot)
+
+    for operand, group in by_operand.items():
+        available = _easy_boundary_ops(easy_text, operand)
+        if not available:
+            continue  # operand absent -> recoverable miss, not a flip
+        for slot in group:
+            if slot.normalized_value in available:
+                available.remove(slot.normalized_value)
                 continue
-            operand = _operand_surface(slot.raw_span)
-            if not operand:
-                continue
-            easy_symbol = _easy_boundary_after(easy_text, operand)
-            if easy_symbol is None:
-                continue  # operand absent -> recoverable miss, not a flip
-            if easy_symbol != src_symbol:
-                detail = "삭제됨" if easy_symbol == "" else f"'{easy_symbol}'로 변경됨"
-                flips.append(
-                    f"자격 경계 연산자('{src_symbol}', {slot.raw_span})가 쉬운본에서 {detail}"
-                )
+            got = available[0] if available else ""
+            detail = "삭제됨" if got == "" else f"'{got}'로 변경됨"
+            flips.append(
+                f"자격 경계 연산자('{slot.normalized_value}', {slot.raw_span})가 쉬운본에서 {detail}"
+            )
 
     return flips

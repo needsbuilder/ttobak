@@ -9,6 +9,7 @@ from __future__ import annotations
 
 from datetime import date
 
+from ttobak.common import Verdict
 from ttobak.fidelity.extract import extract_slots
 from ttobak.fidelity.models import FidelityReport, Slot, SlotType
 from ttobak.fidelity.negation_guard import check_negation_flip
@@ -28,6 +29,18 @@ def verify(source: Document, easy_text: str, ref_date: date,
     NegationGuard polarity check -> route to PASS / REVISE / HUMAN_REVIEW.
     ``use_nli`` (semantic NLI) is a STRETCH flag, OFF by default.
     """
+    # 빈 원문 방어: 슬롯이 0개면 무엇이든 통과하므로, 비어 있는 원문에 대한
+    # 비어 있지 않은 쉬운본은 검증 자체가 불가능 -> 사람 검수로 회부 (fail-safe).
+    # (텍스트 파서도 빈 입력에 ParseError를 던지지만, Document를 직접 만드는
+    # 호출 경로까지 막는 이중 방어다.)
+    if not source.text().strip():
+        return FidelityReport(
+            slots=[], verdict=Verdict.HUMAN_REVIEW, exact_fail_count=0,
+            nli_contradictions=[],
+            drift_flags=["원문이 비어 있어 사실충실성 검증이 불가능함 — 사람 검수 필요"],
+            failed_slots=[],
+        )
+
     slots = extract_slots(source, ref_date)
     failed = verify_high_slots(slots, easy_text, ref_date, rounding_allowlist=rounding_allowlist)
     negation_flips = check_negation_flip(source.text(), easy_text)

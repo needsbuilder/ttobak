@@ -27,7 +27,12 @@ _DATE_RE = re.compile(
     r"|D\s*-\s*\d+|\d+\s*일\s*(?:후|뒤|이내)"
 )
 _CONTACT_RE = re.compile(r"(?:\(?\d{2,4}\)?[\s\-]?\d{3,4}[\s\-]?\d{4})")
-_SCOPE_RE = re.compile(r"[^\s,]*\s*(?:" + "|".join(BOUNDARY_OPERATORS) + r")")
+# 오퍼랜드가 콤마 그룹 숫자(30,000원)일 때 절단되지 않도록 숫자 대안을 먼저 둔다.
+# ([^\s,]* 단독이면 '30,000원 미만' -> '000원 미만'으로 잘려 게이트가 뚫린다.)
+_SCOPE_OPERAND = r"(?:\d{1,3}(?:,\d{3})+|\d+)[^\s,]*|[^\s,]*"
+_SCOPE_RE = re.compile(
+    r"(?:" + _SCOPE_OPERAND + r")\s*(?:" + "|".join(BOUNDARY_OPERATORS) + r")"
+)
 _NEGATION_RE = re.compile(r"[^\s,.]*(?:제외|불가|금지|아니|없|지\s*않)[^\s,.]*")
 
 
