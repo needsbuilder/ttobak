@@ -17,11 +17,28 @@ __all__ = [
 _TEXT_MIMES = frozenset({"text/plain", "text/markdown"})
 
 
+def _decode_bytes(data: bytes) -> str:
+    """Decode raw text bytes, falling back utf-8 -> cp949 (bug fix).
+
+    Korean public/admin documents are frequently saved as cp949/EUC-KR. A
+    utf-8-only decode leaked a raw UnicodeDecodeError for such input; both
+    encodings failing now raises the documented ParseError instead.
+    """
+    try:
+        return data.decode("utf-8")
+    except UnicodeDecodeError:
+        pass
+    try:
+        return data.decode("cp949")
+    except UnicodeDecodeError as exc:
+        raise ParseError(f"could not decode text bytes as utf-8 or cp949: {exc}") from exc
+
+
 def _to_text(source: bytes | str | Path) -> str:
     if isinstance(source, Path):
-        return source.read_text(encoding="utf-8")
+        return _decode_bytes(source.read_bytes())
     if isinstance(source, bytes):
-        return source.decode("utf-8")
+        return _decode_bytes(source)
     return source
 
 

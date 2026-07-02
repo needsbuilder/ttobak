@@ -9,6 +9,7 @@ from __future__ import annotations
 import re
 
 from ttobak.ir import Block, BlockType, Document
+from ttobak.parse.pdf_parser import ParseError
 
 _HEADING_RE = re.compile(r"^(#{1,6})\s+(.*)$")
 _LIST_RE = re.compile(r"^\s*([-*•]|\d+[.)])\s+\S")
@@ -31,7 +32,15 @@ def parse_text(text: str, mime: str) -> Document:
     - Blank lines separate paragraphs and are not emitted as blocks.
 
     All blocks carry confidence 1.0 (trusted text tier).
+
+    Raises ParseError on empty/whitespace-only input, matching pdf_parser and
+    hwp_parser (bug fix: a silent blocks=[] Document let downstream fidelity
+    checks vacuously PASS a fabricated easy-read with zero slots).
     """
+    text = text.lstrip("﻿")  # strip leading UTF-8 BOM (bug fix)
+    if not text.strip():
+        raise ParseError("text input is empty or contains no extractable content")
+
     blocks: list[Block] = []
     paragraph_lines: list[str] = []
 

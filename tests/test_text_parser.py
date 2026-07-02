@@ -1,4 +1,7 @@
+import pytest
+
 from ttobak.ir import BlockType
+from ttobak.parse.pdf_parser import ParseError
 from ttobak.parse.text_parser import parse_text
 
 NOTICE = """# 청년 월세 한시 특별지원 안내
@@ -54,7 +57,26 @@ def test_blank_lines_do_not_produce_blocks():
     assert texts == ["첫 줄", "둘째 줄"]
 
 
-def test_empty_input_yields_no_blocks():
-    doc = parse_text("", "text/plain")
-    assert doc.blocks == []
-    assert doc.text() == ""
+def test_empty_input_raises_parse_error():
+    """빈 입력이 blocks=[] Document로 통과하면 다운스트림 fidelity가 슬롯 0개로
+    지어낸 쉬운본을 PASS시킬 수 있다 (pdf/hwp 파서와 동일하게 ParseError로 통일)."""
+    with pytest.raises(ParseError):
+        parse_text("", "text/plain")
+
+
+def test_whitespace_only_input_raises_parse_error():
+    with pytest.raises(ParseError):
+        parse_text("   \n\t\n  ", "text/plain")
+
+
+def test_bom_is_stripped_and_heading_still_detected():
+    text = "﻿# 제목\n본문"
+    doc = parse_text(text, "text/markdown")
+    headings = [b for b in doc.blocks if b.type == BlockType.HEADING]
+    assert headings[0].text == "제목"
+    assert "﻿" not in doc.text()
+
+
+def test_bom_only_input_raises_parse_error():
+    with pytest.raises(ParseError):
+        parse_text("﻿", "text/plain")
