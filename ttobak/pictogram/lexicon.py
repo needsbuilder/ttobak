@@ -44,3 +44,21 @@ LEXICON: dict[str, PictogramRef] = {
     keyword: PictogramRef(concept=keyword, set=set_name, glyph_id=glyph_id, caption=caption)
     for keyword, (set_name, glyph_id, caption) in _RAW.items()
 }
+
+# 1-syllable keyword false-positive guard (bug fix, verified via reproduction):
+# substring matching on a single Hangul syllable also fires inside unrelated
+# compound words where that syllable is a bound morpheme, not the standalone
+# concept ("약" = medicine matches "계약"=contract, "요약"=summary, etc.).
+# match() consults this per-keyword stoplist of 2-syllable windows before
+# accepting an occurrence, and keeps scanning past a stoplisted occurrence for
+# a legitimate one. Only keywords with a confirmed false-positive get an
+# entry here; other 1-syllable keywords are unaffected.
+FALSE_POSITIVE_COMPOUNDS: dict[str, frozenset[str]] = {
+    "약": frozenset(
+        {
+            "계약", "예약", "요약", "절약",  # 약 as the 2nd syllable
+            "약간", "약속", "약관",  # 약 as the 1st syllable
+            "규약", "공약", "조약",  # 약 as the 2nd syllable
+        }
+    ),
+}
