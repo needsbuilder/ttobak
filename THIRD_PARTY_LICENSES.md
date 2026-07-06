@@ -58,9 +58,18 @@ clean / caution / blocker.
 
 | Set | License | Risk | Source |
 |---|---|---|---|
-| Mulberry Symbols (primary) | CC BY-SA 2.0 UK | caution (SA, commercial OK) | https://mulberrysymbols.org/ |
+| Mulberry Symbols (primary) | CC BY-SA 2.0 UK (website) / 4.0 (bundled LICENSE, shipped verbatim) [^mulberry-lic] | caution (SA, commercial OK) | https://mulberrysymbols.org/ |
 | OpenMoji (secondary) | CC BY-SA 4.0 | caution (SA, commercial OK) | https://openmoji.org/ |
 | ARASAAC / KAAC | CC BY-NC-SA / NC | blocker | Non-Commercial — avoided, not shipped |
+
+[^mulberry-lic]: Verified 2026-07-06 — mulberrysymbols.org states the requested
+attribution as "CC BY-SA 2.0 UK: England & Wales", but the `LICENSE.txt` bundled
+with the actual symbol files (GitHub release v3.5.2, 2025-09-17) references
+CC BY-SA 4.0 (https://creativecommons.org/licenses/by-sa/4.0/). We ship the
+bundled 4.0 file verbatim at `assets/pictograms/mulberry/LICENSE` and disclose
+the discrepancy rather than silently pick one; both versions are ShareAlike and
+permit commercial use, and neither infects the Apache-2.0 code (separate work,
+path-reference only). Full mapping in `assets/pictograms/mulberry/ATTRIBUTION.md`.
 
 ## Avoided copyleft / non-commercial (spec 9.5)
 

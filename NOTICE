@@ -44,7 +44,12 @@ project. License: CC BY-SA 4.0 (https://creativecommons.org/licenses/by-sa/4.0/)
 
 Mulberry Symbols: "Mulberry Symbols are copyright 2018 to 2026 Steve Lee and
 licensed under CC BY-SA 2.0 UK: England & Wales. See
-https://mulberrysymbols.org".
+https://mulberrysymbols.org". License-version note (verified 2026-07-06): the
+LICENSE.txt bundled with the symbol files (GitHub release v3.5.2) instead
+references CC BY-SA 4.0 (https://creativecommons.org/licenses/by-sa/4.0/).
+assets/pictograms/mulberry/ ships that bundled file verbatim and records the
+discrepancy in its ATTRIBUTION.md. Both versions are ShareAlike and permit
+commercial use; neither infects the Apache-2.0 code (separate work, path-ref only).
 
 These CC BY-SA assets live under /assets/pictograms/ with their own LICENSE
 files and are referenced by path/URL only — never embedded inline or base64
