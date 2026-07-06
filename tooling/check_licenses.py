@@ -100,11 +100,25 @@ def check_license_allowlist(packages: list[dict]) -> list[LicenseViolation]:
 
 # --- /assets separation (spec 9.4 embed rule, 8.5 layout) -------------------
 
-GLYPH_SUFFIXES: frozenset[str] = frozenset({".svg", ".png", ".gif", ".webp"})
+# Keep in sync with scripts/check_assets_separation.py PICTOGRAM_EXTS — both
+# gates enforce the same asset-separation invariant (spec 9.4/8.5) in different
+# CI jobs; a mismatch let a committed .jpg/.jpeg glyph pass the local `ttobak
+# audit` false-clean (found by adversarial review 2026-07-06).
+GLYPH_SUFFIXES: frozenset[str] = frozenset({".svg", ".png", ".jpg", ".jpeg", ".gif", ".webp"})
 CODE_DATA_DIRS: tuple[str, ...] = ("ttobak", "corpus", "tooling")
 REQUIRED_PICTOGRAM_SETS: tuple[str, ...] = ("mulberry", "openmoji")
 _SOURCE_SUFFIXES: frozenset[str] = frozenset({".py", ".html", ".jinja", ".j2", ".css", ".js", ".json"})
 _BASE64_GLYPH_RE = re.compile(r"data:image/(?:svg\+xml|png|gif|webp);base64,")
+
+# Active content inside a shipped SVG. The project keeps adding external CC BY-SA
+# icons, and an SVG served inline (Gradio set_static_paths bypasses the mimetype
+# allowlist) with a <script>/on*=/javascript: payload would be an XSS vector if
+# ever opened directly or linked via <a> (found by adversarial review 2026-07-06;
+# no live exploit today since icons render only via <img>). Gate it so a future
+# tainted icon can't land silently.
+_SVG_ACTIVE_CONTENT_RE = re.compile(
+    r"<script\b|javascript:|\son[a-z]+\s*=", re.IGNORECASE
+)
 
 
 def check_assets_separation(root: Path) -> list[LicenseViolation]:
@@ -139,6 +153,14 @@ def check_assets_separation(root: Path) -> list[LicenseViolation]:
             set_dir = pictogram_root / set_name
             if set_dir.exists() and not (set_dir / "LICENSE").exists():
                 violations.append(LicenseViolation("asset-missing-license", f"assets/pictograms/{set_name}"))
+        # No active content in shipped SVGs (XSS hardening for the growing icon set).
+        for svg in pictogram_root.rglob("*.svg"):
+            try:
+                text = svg.read_text(encoding="utf-8", errors="ignore")
+            except OSError:
+                continue
+            if _SVG_ACTIVE_CONTENT_RE.search(text):
+                violations.append(LicenseViolation("asset-svg-active-content", str(svg.relative_to(root))))
     return violations
 
 

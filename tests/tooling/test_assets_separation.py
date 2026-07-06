@@ -48,3 +48,33 @@ def test_glyph_leaked_into_corpus_is_flagged(tmp_path):
     (tmp_path / "corpus").mkdir()
     (tmp_path / "corpus" / "stray.png").write_bytes(b"\x89PNG\r\n")
     assert any(v.kind == "asset-leak" for v in check_assets_separation(tmp_path))
+
+
+def test_jpg_glyph_leaked_into_code_tree_is_flagged(tmp_path):
+    """.jpg/.jpeg must be caught too — GLYPH_SUFFIXES was out of sync with the
+    sister gate and let JPEG glyphs pass local audit (fixed 2026-07-06)."""
+    _make_clean_tree(tmp_path)
+    (tmp_path / "ttobak" / "pictogram" / "leaked.jpg").write_bytes(b"\xff\xd8\xff")
+    assert any(v.kind == "asset-leak" and "leaked.jpg" in v.detail
+               for v in check_assets_separation(tmp_path))
+
+
+def test_svg_with_script_is_flagged(tmp_path):
+    """A shipped SVG carrying <script> is active-content and must be rejected."""
+    _make_clean_tree(tmp_path)
+    (tmp_path / "assets" / "pictograms" / "openmoji" / "evil.svg").write_text(
+        '<svg xmlns="http://www.w3.org/2000/svg"><script>alert(1)</script></svg>',
+        encoding="utf-8")
+    violations = check_assets_separation(tmp_path)
+    assert any(v.kind == "asset-svg-active-content" and "evil.svg" in v.detail
+               for v in violations)
+
+
+def test_svg_with_event_handler_is_flagged(tmp_path):
+    """An inline on*= event handler in a shipped SVG must be rejected."""
+    _make_clean_tree(tmp_path)
+    (tmp_path / "assets" / "pictograms" / "mulberry" / "evil2.svg").write_text(
+        '<svg xmlns="http://www.w3.org/2000/svg"><rect onload="steal()"/></svg>',
+        encoding="utf-8")
+    assert any(v.kind == "asset-svg-active-content"
+               for v in check_assets_separation(tmp_path))
