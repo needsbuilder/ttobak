@@ -3,6 +3,10 @@
 This directory ships pictogram glyphs under their own **CC BY-SA** licenses,
 kept deliberately separate from the Apache-2.0 code in `ttobak/` (spec §9.4).
 
+> Exception: [`brand/`](brand/README.md) holds the project's own logo/banner
+> art and demo screenshots — those are Apache-2.0 project artifacts, placed
+> here only because the separation gate keeps image binaries inside `assets/`.
+
 ```
 assets/pictograms/
   mulberry/   (unmodified)  LICENSE = CC BY-SA 2.0 UK + ATTRIBUTION.md
