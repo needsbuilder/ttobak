@@ -6,7 +6,10 @@
 from __future__ import annotations
 
 import html as _html
+import logging
 from pathlib import Path
+
+_log = logging.getLogger(__name__)
 
 from ttobak.common import Verdict
 from ttobak.levels import Level
@@ -15,6 +18,26 @@ from ttobak.parse import parse
 from ttobak.pipeline import simplify
 from ttobak.providers.base import LLMProvider
 from ttobak.render import render_html
+
+# render_html()은 코어 API라 플랫폼 무관한 "assets/pictograms/..." 상대경로만
+# 안다(spec 9.4 경로참조 규칙). Gradio는 임의 파일시스템 경로를 그대로 서빙하지
+# 않으므로, 웹 레이어에서만 그 경로를 Gradio의 /gradio_api/file= 스킴으로
+# 다시 써준다. gr.set_static_paths()로 노출 범위를 이 디렉터리 하나로 제한한다
+# (allowed_paths 보안 권고 — 필요한 것만 최소로).
+_PICTOGRAM_SRC_PREFIX = "assets/pictograms/"
+_PICTOGRAMS_DIR = (Path(__file__).resolve().parents[2] / "assets" / "pictograms")
+
+
+def _serve_pictograms_via_gradio(html: str) -> str:
+    """render_html() 결과의 픽토그램 img src를 Gradio가 실제로 서빙 가능한
+    /gradio_api/file= 절대경로로 바꾼다. gr.HTML()은 임의 상대경로를 못 띄운다.
+
+    'assets/pictograms/' 접두 상대경로만 대상으로 하며, http(s) 절대 URL
+    glyph(spec 9.4가 허용)은 이 접두가 없어 자연히 건너뛴다(그대로 브라우저가 로드)."""
+    return html.replace(
+        f'src="{_PICTOGRAM_SRC_PREFIX}',
+        f'src="/gradio_api/file={_PICTOGRAMS_DIR}/',
+    )
 
 # 사람이 읽는 한국어 라벨 -> Level. 순서 보존(dict).
 LEVEL_CHOICES: dict[str, Level] = {
@@ -99,6 +122,21 @@ def build_app(provider: "LLMProvider | None" = None) -> "gr.Blocks":
 
     from ttobak.web.provider import make_provider
 
+    if _PICTOGRAMS_DIR.is_dir():
+        gr.set_static_paths(paths=[_PICTOGRAMS_DIR])
+    else:
+        # Pictograms (CC BY-SA) ship as a separate asset pack under the repo's
+        # top-level assets/ (kept OUT of the Apache code tree, spec §9.4), so a
+        # non-editable wheel install won't carry them and this dir is absent.
+        # Warn loudly instead of silently 403-ing every pictogram — a deployer
+        # who sees broken icons then knows to run from a checkout / supply the
+        # asset pack (found by adversarial review 2026-07-06).
+        _log.warning(
+            "픽토그램 자산 디렉터리를 찾지 못했습니다: %s — 데모의 그림 아이콘이 "
+            "표시되지 않습니다. 레포 체크아웃에서 실행하거나 assets/pictograms/ "
+            "자산 팩을 이 경로에 두세요.", _PICTOGRAMS_DIR,
+        )
+
     bound_provider = provider if provider is not None else make_provider()
 
     def _on_click(text_input: str, file_obj, level_label: str):
@@ -138,7 +176,7 @@ def simplify_handler(text_input: str, file_obj, level_label: str, provider: LLMP
         level = _resolve_level(level_label)
         doc = parse(source, mime)
         result = simplify(doc, level, provider)
-        html = render_html(result)
+        html = _serve_pictograms_via_gradio(render_html(result))
         return html, _ker_badge(result.ker), _fidelity_badge(result.fidelity.verdict)
     except Exception as exc:  # noqa: BLE001 — 데모 UI는 어떤 실패도 메시지로 표시
         msg = _html.escape(str(exc)) or "변환 중 오류가 발생했습니다."

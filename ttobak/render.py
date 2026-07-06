@@ -27,6 +27,21 @@ _VERDICT_BADGE: dict[Verdict, tuple[str, str]] = {
 
 _LEVEL_LABEL = {"plain": "보통 읽기", "easy": "쉬운 글"}
 
+
+def _pictogram_src(glyph_id: str) -> str:
+    """Resolve a PictogramRef.glyph_id to an <img src> value.
+
+    Absolute http(s) URLs pass through unchanged; relative glyph ids (the
+    common case, e.g. "mulberry/bank.svg") get the ``assets/pictograms/``
+    prefix. PictogramRef explicitly permits both forms (spec §9.4 — pictograms
+    are referenced by path/URL only), so the prefix must NOT be applied blindly
+    or an external https glyph would become the broken
+    ``assets/pictograms/https://…`` (regression guarded by tests).
+    """
+    if glyph_id.startswith(("http://", "https://")):
+        return glyph_id
+    return f"assets/pictograms/{glyph_id}"
+
 _env = Environment(
     loader=FileSystemLoader(str(_TEMPLATE_DIR)),
     autoescape=select_autoescape(["html", "j2"]),
@@ -58,5 +73,5 @@ def render_html(result: EasyReadResult) -> str:
         fidelity_verdict=result.fidelity.verdict.value,
         fidelity_badge_class=badge_class,
         fidelity_badge_label=badge_label,
-        pictograms=[{"glyph_id": p.glyph_id, "caption": p.caption} for p in result.pictograms],
+        pictograms=[{"src": _pictogram_src(p.glyph_id), "caption": p.caption} for p in result.pictograms],
     )

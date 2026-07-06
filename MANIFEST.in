@@ -1,0 +1,10 @@
+# Ship the CC BY-SA pictogram asset pack in the sdist so a source-distribution
+# consumer has the glyphs available. NOTE: these assets are DELIBERATELY kept
+# out of the Apache-2.0 code tree (ttobak/) — the license-separation gate
+# (scripts/check_assets_separation.py) fails if a glyph file lands under
+# ttobak/ — so they are NOT package-data of the wheel. The Gradio web demo
+# resolves them repo-relative and is meant to run from a checkout / editable
+# install; a bare `pip install` wheel user gets path-reference glyphs (spec
+# §9.4) and supplies the asset pack separately.
+recursive-include assets/pictograms *.svg LICENSE ATTRIBUTION.md
+include NOTICE THIRD_PARTY_LICENSES.md LICENSE

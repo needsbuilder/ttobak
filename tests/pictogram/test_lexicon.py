@@ -1,8 +1,12 @@
+from pathlib import Path
+
 import pytest
 from pydantic import ValidationError
 
 from ttobak.pictogram.models import PictogramRef
 from ttobak.pictogram.lexicon import LEXICON
+
+_ASSETS_PICTOGRAMS = Path(__file__).resolve().parents[2] / "assets" / "pictograms"
 
 
 def test_pictogram_ref_fields():
@@ -27,6 +31,41 @@ def test_lexicon_glyphs_are_path_refs_not_inlined():
         assert not ref.glyph_id.startswith("data:")
         assert ref.set in {"mulberry", "openmoji"}
         assert ref.caption
+
+
+# Regression: every LEXICON entry must resolve to a real file under
+# assets/pictograms/, or the renderer silently shows a broken image icon
+# (bug found 2026-07-06 — the lexicon shipped with zero matching asset files).
+def test_lexicon_glyphs_resolve_to_real_asset_files():
+    missing = sorted({
+        ref.glyph_id for ref in LEXICON.values()
+        if not (_ASSETS_PICTOGRAMS / ref.glyph_id).is_file()
+    })
+    assert not missing, f"LEXICON glyph_id(s) with no file under assets/pictograms/: {missing}"
+
+
+# Regression: DISTINCT glyph_ids must resolve to DISTINCT icon files. Concepts
+# that intentionally share a picture share the SAME glyph_id (돈/금액 → money.svg,
+# 날짜/기한 → calendar.svg); two different glyph_ids pointing at byte-identical
+# files means two concepts collapse to the same picture — defeating pictograms
+# for the low-literacy reader. (Found 2026-07-06: money.svg was a byte-identical
+# copy of bank.svg, so 돈·은행·계좌 all rendered as the same bank building.)
+def test_distinct_glyph_ids_have_distinct_file_content():
+    import hashlib
+
+    by_hash: dict[str, list[str]] = {}
+    for glyph_id in sorted({ref.glyph_id for ref in LEXICON.values()}):
+        path = _ASSETS_PICTOGRAMS / glyph_id
+        if not path.is_file():
+            continue  # covered by the resolve-to-real-file test above
+        digest = hashlib.md5(path.read_bytes()).hexdigest()
+        by_hash.setdefault(digest, []).append(glyph_id)
+
+    collisions = {h: ids for h, ids in by_hash.items() if len(ids) > 1}
+    assert not collisions, (
+        "distinct glyph_ids resolve to byte-identical files (same picture): "
+        f"{[ids for ids in collisions.values()]}"
+    )
 
 
 # M4 regression: data: URI glyph_ids must be rejected at model level (spec §9.4)

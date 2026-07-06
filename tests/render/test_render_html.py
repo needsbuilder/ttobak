@@ -62,8 +62,22 @@ def test_render_html_fidelity_badge_pass():
 
 def test_render_html_renders_pictogram_path_not_inlined():
     html = render_html(_build_result())
-    assert 'src="mulberry/money.svg"' in html
+    assert 'src="assets/pictograms/mulberry/money.svg"' in html
     assert "data:image" not in html
+
+
+def test_render_html_passes_through_https_glyph_url_unprefixed():
+    """A PictogramRef with an https glyph_id must render verbatim, NOT get the
+    assets/pictograms/ prefix (regression: unconditional prefix produced the
+    broken src="assets/pictograms/https://…")."""
+    result = _build_result()
+    result.pictograms = [
+        PictogramRef(concept="신청", set="openmoji",
+                     glyph_id="https://cdn.example.org/icons/apply.svg", caption="신청")
+    ]
+    html = render_html(result)
+    assert 'src="https://cdn.example.org/icons/apply.svg"' in html
+    assert "assets/pictograms/https" not in html
 
 
 def test_render_html_human_review_badge():

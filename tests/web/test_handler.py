@@ -53,3 +53,29 @@ def test_fidelity_badge_pass_vs_human_review():
     human_badge = webapp._fidelity_badge(Verdict.HUMAN_REVIEW)
     assert pass_badge != human_badge
     assert "검수" in human_badge
+
+
+# Bug regression (2026-07-06): render_html()'s plain "assets/pictograms/..."
+# src never resolves inside Gradio's gr.HTML() sandbox (broken image icon).
+# The web layer must rewrite it to Gradio's /gradio_api/file= serving scheme.
+def test_serve_pictograms_via_gradio_rewrites_src_to_gradio_file_scheme():
+    html = '<img src="assets/pictograms/mulberry/money.svg" alt="돈">'
+    rewritten = webapp._serve_pictograms_via_gradio(html)
+    assert 'src="assets/pictograms/' not in rewritten
+    assert rewritten.startswith(f'<img src="/gradio_api/file={webapp._PICTOGRAMS_DIR}/mulberry/money.svg"')
+
+
+def test_handler_output_pictogram_src_is_gradio_servable():
+    # Provider output deliberately contains pictogram-triggering concepts
+    # (전화·신청) so a pictogram is GUARANTEED and the format assertion below is
+    # never vacuous — #12 regression: the old test hid the format check behind
+    # `if "/gradio_api/file=" in html`, which silently died if the fixture text
+    # stopped matching a lexicon keyword.
+    provider = FakeProvider(default="전화로 신청하세요.")
+    html, _, _ = webapp.simplify_handler(
+        "만 65세 이상 어르신은 2026년 7월 17일까지 신청하셔야 합니다.", None,
+        next(iter(webapp.LEVEL_CHOICES)), provider,
+    )
+    assert 'src="assets/pictograms/' not in html, "raw core path leaked into Gradio HTML unrewritten"
+    assert "/gradio_api/file=" in html, "pictogram present but not rewritten to Gradio serving scheme"
+    assert str(webapp._PICTOGRAMS_DIR) in html
