@@ -34,7 +34,7 @@ clean / caution / blocker.
 | NLI (fidelity) | kf-deberta-base-cross-nli | MIT | clean | https://huggingface.co/deliciouscat/kf-deberta-base-cross-nli |
 | Korean number normalization | korean-number / es-hangul | permissive | clean | https://pypi.org/project/korean-number/ |
 | Date parsing | dateparser | BSD-3-Clause | clean | https://github.com/scrapinghub/dateparser |
-| NER (primary) | spaCy ko_core_news_lg | MIT (code) / CC BY-SA 4.0 (model asset) | clean | https://huggingface.co/spacy/ko_core_news_lg |
+| NER (stretch — roadmap, not shipped) | spaCy ko_core_news_lg | MIT (code) / CC BY-SA 4.0 (model asset) | clean | https://huggingface.co/spacy/ko_core_news_lg |
 | Web API | fastapi | MIT | clean | https://github.com/fastapi/fastapi |
 | ASGI server | uvicorn | BSD-3-Clause | clean | https://github.com/encode/uvicorn |
 | Renderer templates | jinja2 | BSD-3-Clause | clean | https://github.com/pallets/jinja |
