@@ -34,6 +34,7 @@ dependencies = [
 dev = [
     "pytest>=8.0,<9",
     "pip-licenses>=5.0,<6",
+    "ruff>=0.5",
 ]
 anthropic = ["anthropic>=0.40"]
 ollama = ["ollama>=0.4"]
@@ -56,3 +57,11 @@ ttobak = ["templates/*.j2", "data/*.txt"]
 minversion = "8.0"
 addopts = "-ra"
 testpaths = ["tests"]
+
+[tool.ruff]
+target-version = "py311"
+
+[tool.ruff.lint]
+# 최소 정적 게이트: F(pyflakes — 미사용/미정의 이름), E9(구문 오류).
+# 스타일 규칙은 의도적으로 제외 (게이트는 결함 탐지용, 취향 강제용 아님).
+select = ["F", "E9"]

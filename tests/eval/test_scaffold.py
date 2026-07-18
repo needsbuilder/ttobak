@@ -2,7 +2,6 @@ from datetime import date
 
 import ttobak.eval
 from ttobak.ir import BlockType, Document
-from ttobak.levels import Level
 
 
 def test_eval_package_importable():

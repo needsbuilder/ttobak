@@ -1,7 +1,6 @@
 import sys
 import types
 
-import pytest
 
 from ttobak.providers.base import LLMProvider
 from ttobak.providers.ollama_provider import OllamaProvider

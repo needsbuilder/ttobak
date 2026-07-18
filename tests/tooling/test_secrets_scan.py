@@ -1,4 +1,3 @@
-from pathlib import Path
 
 from tooling.check_licenses import check_no_secrets
 

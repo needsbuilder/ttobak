@@ -8,6 +8,10 @@ from __future__ import annotations
 import html as _html
 import logging
 from pathlib import Path
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:  # pragma: no cover - 타입 전용, 런타임은 lazy import 유지
+    import gradio as gr
 
 _log = logging.getLogger(__name__)
 

@@ -1,7 +1,7 @@
 import json
 from pathlib import Path
 
-from tooling.check_licenses import LicenseViolation, check_license_allowlist
+from tooling.check_licenses import check_license_allowlist
 
 FIXTURES = Path(__file__).parent / "fixtures"
 

@@ -1,6 +1,4 @@
-from datetime import date
 
-import pytest
 
 import ttobak.pipeline as pipeline
 from ttobak.pipeline import simplify

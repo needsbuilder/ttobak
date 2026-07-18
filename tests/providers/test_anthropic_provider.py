@@ -1,4 +1,3 @@
-import pytest
 
 from ttobak.providers.anthropic_provider import AnthropicProvider
 from ttobak.providers.base import LLMProvider

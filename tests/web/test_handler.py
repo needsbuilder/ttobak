@@ -1,4 +1,3 @@
-import pytest
 
 from ttobak.common import Verdict
 from ttobak.providers import FakeProvider

@@ -13,7 +13,6 @@ from __future__ import annotations
 
 import importlib.resources
 import re
-import unicodedata
 from pathlib import Path
 
 from pydantic import BaseModel
@@ -251,7 +250,6 @@ def rule_predicates_connectives(text: str, tokens: list[Token]) -> RuleResult:
     sents = [s.strip() for s in _SENT_SPLIT_RE.split(text) if s.strip()]
     if not sents:
         sents = [text]
-    tok_counts = _sent_tokens(text, tokens)
     ec_tokens = [t for t in tokens if t.tag in _CONNECTIVE_TAGS]
     n_ec = len(ec_tokens)
     n_sents = max(1, len(sents))

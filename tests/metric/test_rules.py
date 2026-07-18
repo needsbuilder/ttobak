@@ -1,6 +1,5 @@
 import pytest
 
-from ttobak.common import Severity
 from ttobak.metric.tokenize import Token
 from ttobak.metric.rules import (
     ALL_RULES,

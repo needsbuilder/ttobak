@@ -4,7 +4,6 @@ import pytest
 from pypdf import PdfWriter
 
 from ttobak.ir import BlockType, Document
-from ttobak.parse._fixtures import make_minimal_pdf
 from ttobak.parse.pdf_parser import (
     ParseError, parse_pdf, PDF_PRIMARY_CONFIDENCE, PDF_FALLBACK_CONFIDENCE,
 )
