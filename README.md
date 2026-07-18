@@ -6,14 +6,22 @@
   <a href="https://github.com/needsbuilder/ttobak/actions/workflows/ci.yml"><img src="https://github.com/needsbuilder/ttobak/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
   <img src="https://img.shields.io/badge/code-Apache--2.0-blue" alt="License: Apache-2.0">
   <img src="https://img.shields.io/badge/python-3.11%2B-3776AB" alt="Python 3.11+">
-  <img src="https://img.shields.io/badge/tests-384_passed-2ea44f" alt="tests 384 passed">
+  <img src="https://img.shields.io/badge/tests-403_passed-2ea44f" alt="tests 403 passed">
   <img src="https://img.shields.io/badge/corpus-CC_BY_4.0-lightgrey" alt="Corpus CC BY 4.0">
 </p>
 
 **또박(Ttobak)** 은 어려운 한국어 공공·행정 문서(공문·고지서·안내문)를 **쉬운
 글(Easy-Read)** 로 바꾸는 오픈소스 엔진입니다. 쉬움을 **K-ER 점수로 측정**하고,
-숫자·날짜·금액·기한·자격이 바뀌지 않았는지 **Fidelity 게이트로 검증**하며,
+숫자·날짜·금액·기한·자격·기관명이 바뀌지 않았는지 **Fidelity 게이트로 검증**하며,
 왜곡이 의심되면 고치지 않고 **사람 검수로 회부**합니다.
+
+> **English** — Ttobak is an open-source engine that turns hard Korean public
+> documents into Easy-Read Korean: it measures easiness with a rule-based K-ER
+> rubric, guards facts (amounts, dates, deadlines, eligibility, agency names)
+> through a fidelity gate, and routes suspected distortions to human review
+> instead of silently auto-fixing them.
+
+📺 **[2분 37초 시연 영상 보기](https://youtu.be/sAFCpgG1-2E)** — 실제 실행 화면만으로 구성한 데모입니다.
 
 <p align="center">
   <img src="assets/brand/demo.png" width="880" alt="또박 웹 데모 — 원문과 쉬운 글을 나란히 보여주고 K-ER 점수·Fidelity 판정·픽토그램을 함께 표시">
@@ -26,16 +34,17 @@
 | | |
 |---|---|
 | 📏 **측정하는 쉬움** | 열두 가지 규칙(문장 길이·어려운 낱말·피동·부정 밀도 …)으로 K-ER 점수를 매기고, 점수보다 **규칙별 위반 체크리스트**를 핵심 산출물로 냅니다. |
-| 🧷 **사실이 먼저** | Fidelity 게이트가 금액·날짜·자격을 슬롯별로 원문과 대조합니다. 값이 사라지면 자동 재교정, `미만→이하` 같은 **의미 반전은 자동 교정 없이 사람 검수로** 돌려보냅니다. |
+| 🧷 **사실이 먼저** | Fidelity 게이트가 금액·날짜·연락처·자격·기관명·개수를 슬롯별로 원문과 대조합니다. 값이 사라지면 자동 재교정, `미만→이하` 같은 의미 반전이나 `강서구청→송파구청` 같은 **기관 바꿔치기는 자동 교정 없이 사람 검수로** 돌려보냅니다. |
 | 📄 **포맷 네이티브** | 관공서 원본 포맷(PDF·HWPX)을 변환 없이 직접 파싱합니다. |
 | 🔓 **전부 공개** | 코드(Apache-2.0)·코퍼스(CC BY 4.0)·평가 하네스까지 공개. 로컬 모델(큐원 2.5 7B, Apache-2.0)로도 동일하게 동작합니다. |
 
 ## 빠른 시작
 
 ```bash
+python3 -m venv venv && source venv/bin/activate   # 가상환경 생성 (최신 macOS/우분투의 PEP 668 필수)
 python -m pip install -e ".[dev]"   # 설치 (Python 3.11+)
 ttobak web --provider fake          # 웹 데모 (fake = API 키 불필요)
-python -m pytest -q                 # 테스트 (384개)
+python -m pytest -q                 # 테스트 (403개)
 ```
 
 Anthropic API 키가 있으면 `--provider anthropic`, 로컬 Ollama가 있으면
@@ -58,14 +67,21 @@ render_html() 원문/쉬운본 나란히 HTML + 면책 + 배지
 
 - 공개 합성 코퍼스 11쌍: K-ER 평균 **71.2 → 80.7 (Δ +9.5)**, 규칙 위반 평균 −2.09건,
   **전 페어 Fidelity PASS** — 재현: `python -m tooling.annotate_corpus`
-- 테스트 **384개** 통과 · 라이선스/보안 감사 clean (`ttobak audit`)
-- CI 4중 게이트: pytest + 의존성 라이선스 허용목록 + 자산 분리 검사 + 감사
+- 테스트 **403개** 통과 · 라이선스/보안 감사 clean (`ttobak audit`)
+- CI 5중 게이트: 정적분석(ruff) + pytest + 의존성 라이선스 허용목록 + 자산 분리 검사 + 감사
 
 ## 정직성 (Honesty) — 반드시 읽어 주세요
 
 - K-ER 점수는 **한국 Easy-Read 지침에 정렬된 규칙 기반 루브릭**이며 **경험적으로
   검증된 지표가 아닙니다** (공개·검증된 한국어 Easy-Read 라벨 코퍼스 부재). 0–100
   점수는 보조 지표이고, 규칙별 위반 체크리스트(pass/fail)가 핵심 산출물입니다.
+- Fidelity 게이트의 현재 커버리지를 정직하게 밝힙니다: 금액·날짜·연락처·자격
+  경계·부정 표현은 **정규화 기반 정확 검증**, 기관명·개수는 **패턴 기반
+  best-effort 검증**입니다(행정기관 접미사 사전·단위명사 — 사전 밖 기관명이나
+  희귀 표기는 놓칠 수 있음). 반대 방향의 한계도 있습니다: 단위 동의어(6개월→여섯
+  달, 65세→65살)는 아직 등가로 인정하지 못해 왜곡이 아닌데도 재교정으로 회부될
+  수 있습니다(안전 방향 오류). 담당자 성명·기간·조건·양태 슬롯과 NER 교차검증은
+  로드맵입니다.
 - 모든 출력은 원문과 면책 고지를 함께 렌더링합니다: **"자동 변환 결과이며 법적
   효력은 원문이 우선합니다."**
 - 또박은 "한국어 Easy-Read AI 최초"를 주장하지 않습니다(온글·KCI·KIPS 선행). 엣지는
