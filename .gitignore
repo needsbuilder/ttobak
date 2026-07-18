@@ -18,3 +18,4 @@ dev-only/
 
 # Internal working handoff (not a public artifact)
 HANDOFF.md
+.gstack/
