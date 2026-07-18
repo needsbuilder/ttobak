@@ -250,3 +250,91 @@ def test_m7_empty_source_nonempty_easy_is_human_review():
     fabricated = "신청 기한은 2099년 12월 31일까지입니다. 누구나 지원금을 받을 수 있습니다."
     report = verify(empty, fabricated, REF)
     assert report.verdict == Verdict.HUMAN_REVIEW
+
+
+# ---------------------------------------------------------------------------
+# M8 — agency swap (기관명 바꿔치기)
+#   기관명은 자동교정이 불가능한 의미 슬롯(router: not AUTO_RECOVERABLE)이므로
+#   원문 기관명이 쉬운본에서 사라지면 HUMAN_REVIEW로 가야 한다.
+# ---------------------------------------------------------------------------
+
+_M8_SOURCE = "임대차 계약 신고는 강서구청 민원실에 하시기 바랍니다."
+
+
+def test_m8_agency_swap_is_human_review():
+    # 강서구청 -> 송파구청: 접수처 바꿔치기. 잘못된 기관으로 안내되면
+    # 이용자가 실제 불이익을 받으므로 절대 PASS 되면 안 된다.
+    report = verify(_doc(_M8_SOURCE), "임대차 계약 신고는 송파구청 민원실에 하세요.", REF)
+    assert report.verdict == Verdict.HUMAN_REVIEW
+    assert any(s.type == SlotType.AGENCY for s in report.failed_slots)
+
+
+def test_m8_agency_dropped_not_pass():
+    report = verify(_doc(_M8_SOURCE), "임대차 계약 신고는 민원실에 하세요.", REF)
+    assert report.verdict != Verdict.PASS
+
+
+def test_m8_faithful_agency_control_passes():
+    report = verify(_doc(_M8_SOURCE), "임대차 계약 신고는 강서구청 민원실에 하세요.", REF)
+    assert report.verdict == Verdict.PASS, report.drift_flags
+
+
+def test_m8_public_corporation_swap_is_human_review():
+    src = "연금은 국민연금공단에서 지급합니다."
+    report = verify(_doc(src), "연금은 근로복지공단에서 지급합니다.", REF)
+    assert report.verdict == Verdict.HUMAN_REVIEW
+
+
+def test_m8_agency_spacing_variant_passes():
+    # Easy-Read는 복합어 띄어쓰기를 권장한다 — '강서 구청'은 왜곡이 아니다.
+    # (공백 민감 비교면 무손상 쉬운본이 HUMAN_REVIEW로 종료되는 거짓 양성)
+    report = verify(_doc(_M8_SOURCE), "임대차 계약 신고는 강서 구청 민원실에 하세요.", REF)
+    assert report.verdict == Verdict.PASS, report.failed_slots
+
+
+def test_m8_agency_swap_with_spacing_still_human_review():
+    # 띄어쓰기 관용이 바꿔치기 탐지를 무르게 하면 안 된다.
+    report = verify(_doc(_M8_SOURCE), "임대차 계약 신고는 송파 구청 민원실에 하세요.", REF)
+    assert report.verdict == Verdict.HUMAN_REVIEW
+
+
+# ---------------------------------------------------------------------------
+# M9 — bare count distortion (단위명사 붙은 일반 숫자 왜곡)
+#   금액/날짜 형식이 아닌 '개수'(명/건/가구/% 등)는 기존 게이트의 사각지대였다.
+#   왜곡은 REVISE(자동 재교정 가능), 표기 변형(콤마·퍼센트·고유어 수사)은 PASS.
+# ---------------------------------------------------------------------------
+
+_M9_SOURCE = "올해 지원 대상자는 총 300명입니다."
+
+
+def test_m9_count_distortion_not_pass():
+    # 300명 -> 3,000명: 자릿수 왜곡이 PASS로 통과되면 안 된다.
+    report = verify(_doc(_M9_SOURCE), "올해 지원 대상자는 총 3,000명입니다.", REF)
+    assert report.verdict == Verdict.REVISE
+    assert any(s.type == SlotType.NUMERIC for s in report.failed_slots)
+
+
+def test_m9_faithful_count_control_passes():
+    report = verify(_doc(_M9_SOURCE), "올해 지원 대상자는 모두 300명이에요.", REF)
+    assert report.verdict == Verdict.PASS, report.drift_flags
+
+
+def test_m9_count_no_tail_substring_survival():
+    # '5,000명'이 '15,000명'의 꼬리로 생존 처리되면 안 된다 (M3와 동일 원칙).
+    src = "행사 정원은 5,000명입니다."
+    report = verify(_doc(src), "행사 정원은 15,000명입니다.", REF)
+    assert report.verdict != Verdict.PASS
+
+
+def test_m9_percent_surface_variants_pass():
+    # 퍼센트 <-> % 표기 차이는 같은 값이다.
+    src = "기준 중위소득의 32퍼센트가 기준입니다."
+    report = verify(_doc(src), "기준 중위소득의 32%가 기준이에요.", REF)
+    assert report.verdict == Verdict.PASS, report.drift_flags
+
+
+def test_m9_native_numeral_rephrase_passes():
+    # 쉬운 글은 '1명당'을 '한 명마다'로 풀어 쓴다 — 고유어 수사는 같은 값.
+    src = "아동 1명당 100,000원을 지급합니다."
+    report = verify(_doc(src), "아동 한 명마다 100,000원을 드려요.", REF)
+    assert report.verdict == Verdict.PASS, report.drift_flags

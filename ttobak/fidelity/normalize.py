@@ -170,3 +170,52 @@ def detect_boundary(text: str) -> str | None:
         if keyword in text:
             return symbol
     return None
+
+
+# --- Bare counts with unit nouns (spec 6.3 NUMERIC, best-effort) -------------
+# 금액(원)·연월일·전화번호는 각자 MONEY/DATE/CONTACT 슬롯이 담당하므로 단위
+# 목록에서 의도적으로 제외한다. '(?<![\d,])'는 '5,000명'이 '15,000명'의 꼬리로
+# 매칭되는 부분문자열 오인을 막는다 (SCOPE 오퍼랜드 매칭과 동일 원칙).
+# '개'는 '개월'(기간, DURATION 로드맵)의 접두로 오매칭되지 않게 (?!월) 가드.
+COUNT_UNITS: tuple[str, ...] = (
+    "명", "건", "회", "개", "가구", "세대", "곳", "세", "%", "퍼센트",
+)
+_COUNT_UNIT_ALT = "|".join("개(?!월)" if u == "개" else u for u in COUNT_UNITS)
+COUNT_RE = re.compile(
+    r"(?<![\d,])(\d{1,3}(?:,\d{3})+|\d+)\s*(" + _COUNT_UNIT_ALT + r")"
+)
+# 쉬운 글은 '1명'을 '한 명'으로 풀어 쓴다 — 고유어 수사(1~10)는 같은 값으로
+# 인정한다. 쉬운본 매칭 전용(관대화 방향)이라 왜곡을 통과시키는 쪽으로는
+# 작동하지 않는다.
+# 문서화된 한계 (모두 과잉 표시 방향 — 왜곡이 아닌데 REVISE가 날 수 있음,
+# 왜곡을 통과시키는 방향 아님): 11 이상 고유어 수사('서른 개')·한자어 수사
+# 표기, 단위 동의어(3세대↔세 가구, 6개월↔여섯 달, 65세↔65살)는 아직 등가로
+# 인정하지 못한다.
+_NATIVE_NUMERALS: dict[str, int] = {
+    "한": 1, "두": 2, "세": 3, "네": 4, "다섯": 5,
+    "여섯": 6, "일곱": 7, "여덟": 8, "아홉": 9, "열": 10,
+}
+# '(?<![가-힣])'는 '동네 곳'의 '네 곳'(4곳) 같은 어중 오인을 막는다.
+NATIVE_COUNT_RE = re.compile(
+    r"(?<![가-힣])(다섯|여섯|일곱|여덟|아홉|한|두|세|네|열)\s*("
+    + "|".join("개(?!월)" if u == "개" else u
+               for u in COUNT_UNITS if u not in ("%", "퍼센트"))
+    + r")"
+)
+
+
+def normalize_count(number_text: str, unit: str) -> str:
+    """Canonicalize a count expression: '3,000'+'가구'->'3000가구', '32'+'퍼센트'->'32%'."""
+    value = int(number_text.replace(",", ""))
+    canonical_unit = "%" if unit in ("%", "퍼센트") else unit
+    return f"{value}{canonical_unit}"
+
+
+def count_values(text: str) -> set[str]:
+    """모든 개수 표현의 정규값 집합 (아라비아 표기 + 고유어 수사)."""
+    values: set[str] = set()
+    for m in COUNT_RE.finditer(text):
+        values.add(normalize_count(m.group(1), m.group(2)))
+    for m in NATIVE_COUNT_RE.finditer(text):
+        values.add(f"{_NATIVE_NUMERALS[m.group(1)]}{m.group(2)}")
+    return values

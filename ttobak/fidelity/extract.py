@@ -1,9 +1,13 @@
 """Slot extraction from source IR (spec 6.3).
 
-Redundant extraction: regex + normalizers form the deterministic core; spaCy
-``ko_core_news_lg`` NER is OPTIONAL and gated behind import availability so the
-test suite stays deterministic and offline. Extraction over-collects (recall
-first); the verifier decides survival.
+Regex + normalizers form the deterministic core so the test suite stays
+deterministic and offline. Extraction over-collects (recall first); the
+verifier decides survival.
+
+구현 범위 (정직한 경계): MONEY/DATE/CONTACT/SCOPE/NEGATION은 정규화 기반
+정확 검증, AGENCY(기관명 접미사 사전)/NUMERIC(단위명사 개수)은 best-effort
+패턴 추출이다. PERSON/DURATION/ELIGIBILITY/CONDITIONAL/MODALITY 추출과
+NER 기반 기관명 보강은 로드맵 (spec 6.3의 전체 슬롯 타입은 models.SlotType).
 """
 from __future__ import annotations
 
@@ -14,7 +18,9 @@ from ttobak.common import Severity
 from ttobak.fidelity.models import Slot, SlotType
 from ttobak.fidelity.normalize import (
     BOUNDARY_OPERATORS,
+    COUNT_RE,
     detect_boundary,
+    normalize_count,
     normalize_date,
     normalize_money,
     normalize_phone,
@@ -34,6 +40,18 @@ _SCOPE_RE = re.compile(
     r"(?:" + _SCOPE_OPERAND + r")\s*(?:" + "|".join(BOUNDARY_OPERATORS) + r")"
 )
 _NEGATION_RE = re.compile(r"[^\s,.]*(?:제외|불가|금지|아니|없|지\s*않)[^\s,.]*")
+# 기관명 (best-effort): 행정기관 접미사 사전 + 자주 쓰는 단독 기관명.
+# '공사'(construction 동음이의)·단독 '청'('신청'류 오인)은 의도적으로 제외.
+# 접미사 사전에 없는 기관·조사 결합 변형은 문서화된 한계 (NER 보강 로드맵).
+_AGENCY_SUFFIXES = (
+    "구청|시청|군청|도청|주민센터|행정복지센터|복지센터|복지관|보건소|공단"
+    "|세무서|우체국|경찰서|소방서|교육청|지원센터|위원회|재단|협회"
+)
+_AGENCY_NAMED = (
+    "국세청|병무청|경찰청|검찰청|기상청|조달청|통계청|관세청|산림청|특허청"
+    "|소방청|질병관리청|건강보험심사평가원"
+)
+_AGENCY_RE = re.compile(rf"[가-힣]+(?:{_AGENCY_SUFFIXES})|(?:{_AGENCY_NAMED})")
 
 
 def _add(slots, span, value, stype, offset, polarity=True, crit=Severity.HIGH):
@@ -75,5 +93,12 @@ def extract_slots(doc: Document, ref_date: date) -> list[Slot]:
 
     for m in _NEGATION_RE.finditer(text):
         _add(slots, m.group(0), m.group(0).strip(), SlotType.NEGATION, m.start(), polarity=False)
+
+    for m in _AGENCY_RE.finditer(text):
+        _add(slots, m.group(0), m.group(0), SlotType.AGENCY, m.start())
+
+    for m in COUNT_RE.finditer(text):
+        _add(slots, m.group(0), normalize_count(m.group(1), m.group(2)),
+             SlotType.NUMERIC, m.start())
 
     return slots

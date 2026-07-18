@@ -1,7 +1,12 @@
 """Exact-match verification of HIGH-criticality slots (spec 6.4, 6.8).
 
-NUMERIC/DATE/MONEY/CONTACT/SCOPE slots must survive verbatim (by normalized
-value) in the easy text. Rounding is a distortion UNLESS all three conditions
+NUMERIC/DATE/MONEY/CONTACT/SCOPE/AGENCY slots must survive (by normalized
+value; AGENCY by surface substring) in the easy text. NUMERIC accepts
+표기 변형(콤마·퍼센트/%·고유어 수사 1~10)을 같은 값으로 인정한다.
+한계(문서화): 쉬운본이 원문에 없는 기관명을 창작하는 방향의 환각은 원문
+슬롯 기반 생존 검증으로는 잡지 못한다 — NER 교차검증 로드맵.
+
+Rounding is a distortion UNLESS all three conditions
 of spec 6.8 hold simultaneously: (1) the source span contains a hedge token,
 (2) the easy text preserves the same hedge token, (3) the slot's normalized
 value is in the document-level rounding allowlist (empty by default, opt-in).
@@ -23,7 +28,7 @@ from ttobak.common import Severity
 from ttobak.fidelity.models import Slot, SlotType
 from ttobak.fidelity.normalize import (
     BOUNDARY_OPERATORS,
-    detect_boundary,
+    count_values,
     normalize_date,
     normalize_money,
     normalize_phone,
@@ -198,6 +203,7 @@ def verify_high_slots(slots: list[Slot], easy_text: str, ref_date: date,
     money_values = _easy_money_values(easy_text)
     date_values = _easy_date_values(easy_text, ref_date)
     contact_values = _easy_contact_values(easy_text)
+    numeric_values = count_values(easy_text)
     ambiguous_md = _ambiguous_month_days(slots)
 
     failed: list[Slot] = []
@@ -222,7 +228,14 @@ def verify_high_slots(slots: list[Slot], easy_text: str, ref_date: date,
             operand = _operand_surface(slot.raw_span)
             survived = bool(_operand_occurrences(easy_text, operand))
         elif slot.type == SlotType.NUMERIC:
-            survived = slot.normalized_value in money_values or slot.normalized_value in easy_text
+            # 정규값 집합 비교 — 표기 변형(3,000명/3000명, 32퍼센트/32%,
+            # 1명/한 명)은 생존, 값이 다르면 부분문자열이어도 실패.
+            survived = slot.normalized_value in numeric_values
+        elif slot.type == SlotType.AGENCY:
+            # 공백 무시 비교 — Easy-Read의 복합어 띄어쓰기('강서 구청')는
+            # 왜곡이 아니다. 바꿔치기('송파 구청')는 여전히 실패한다.
+            survived = (slot.normalized_value.replace(" ", "")
+                        in easy_text.replace(" ", ""))
         else:
             survived = slot.normalized_value in easy_text
 
