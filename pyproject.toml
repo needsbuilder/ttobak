@@ -21,7 +21,7 @@ classifiers = [
 ]
 dependencies = [
     "pydantic>=2.6,<3",
-    "kiwipiepy>=0.17,<0.21",
+    "kiwipiepy>=0.17,<0.24",  # <0.24 상한: 0.23.2에서 tokenize 실통합 검증(2026-07-18, test_tokenize_live)
     "pypdf>=4.0,<6",
     "pdfminer.six>=20231228",
     "hwp-hwpx-parser==1.0.0",
