@@ -21,7 +21,8 @@ def _build_parser() -> argparse.ArgumentParser:
     web.add_argument("--host", default="127.0.0.1", help="바인드 호스트 (기본 127.0.0.1)")
     web.add_argument("--port", type=int, default=7860, help="포트 (기본 7860)")
     web.add_argument("--provider", default=None,
-                     help="LLM 프로바이더 이름 (anthropic|fake). 미지정 시 $TTOBAK_PROVIDER 또는 anthropic")
+                     help="LLM 프로바이더 이름 (ollama|anthropic|fake). "
+                          "미지정 시 $TTOBAK_PROVIDER 또는 ollama(로컬 독립 구동)")
     web.add_argument("--share", action="store_true", help="Gradio 공개 링크 생성")
 
     audit_p = sub.add_parser("audit", help="라이선스·보안 게이트 실행 (spec 14.5)")

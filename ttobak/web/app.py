@@ -20,6 +20,7 @@ from ttobak.levels import Level
 from ttobak.metric.models import KERReport
 from ttobak.parse import parse
 from ttobak.pipeline import simplify
+from ttobak.providers import FakeProvider
 from ttobak.providers.base import LLMProvider
 from ttobak.render import render_html
 
@@ -119,6 +120,12 @@ _INTRO = (
     "사실충실성(Fidelity)을 함께 측정합니다."
 )
 
+_STUB_BANNER = (
+    "데모 스텁 모드 — LLM 프로바이더가 연결되지 않아 고정 문장을 돌려줍니다. "
+    "실제 변환 결과가 아닙니다. 로컬 모델로 실행하려면 "
+    "`ollama serve` + `ollama pull qwen2.5:7b` 후 `ttobak web` 을 다시 실행하세요."
+)
+
 
 def build_app(provider: "LLMProvider | None" = None) -> "gr.Blocks":
     """Gradio 데모를 구성해 Blocks 를 반환한다(launch 는 호출자 책임)."""
@@ -148,6 +155,11 @@ def build_app(provider: "LLMProvider | None" = None) -> "gr.Blocks":
 
     with gr.Blocks(title="또박 Ttobak", analytics_enabled=False) as demo:
         gr.Markdown(_INTRO)
+        # FakeProvider 는 LLM 을 부르지 않고 미리 정해진 문장을 돌려준다. 그 화면을
+        # 실제 변환 결과로 오인하면 안 되므로, 스텁일 때는 배너를 띄운다 —
+        # stderr 경고는 브라우저만 보는 사람에게 닿지 않는다(정직성 원칙).
+        if isinstance(bound_provider, FakeProvider):
+            gr.Markdown(f"> 🧪 **{_STUB_BANNER}**")
         with gr.Row():
             with gr.Column(scale=1):
                 with gr.Tab("텍스트 붙여넣기"):

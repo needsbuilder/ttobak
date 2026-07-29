@@ -50,7 +50,9 @@ render_html() ttobak/render.py 원문/쉬운본 나란히 HTML + 면책 + 배지
 - `max_revise` 소진 후 잔존 REVISE는 HUMAN_REVIEW로 승격 (fail-safe).
 - `score`/`verify`는 테스트 monkeypatch를 위해 모듈 레벨에서 import되어 있다 — 이 구조를 깨지 말 것.
 
-**LLM 프로바이더 (`ttobak/providers/`):** `LLMProvider` Protocol + 팩토리 `get_provider()`. `fake`(테스트 전용 — 테스트는 절대 라이브 API를 치지 않는다), `anthropic`(데모 기본), `ollama`(로컬, 기본 `kanana-1.5-8b`). 실제 SDK는 생성 시점에 lazy import — optional extras 없이도 패키지가 import돼야 한다. `ttobak/web/provider.py`의 `make_provider()`는 이름 미지정 시 `$TTOBAK_PROVIDER` → `anthropic` 순으로 고르고, API 키 부재 시 FakeProvider로 폴백한다(CI 안전성).
+**LLM 프로바이더 (`ttobak/providers/`):** `LLMProvider` Protocol + 팩토리 `get_provider()`. `ollama`(**기본** — 로컬 독립 구동, 기본 모델 `qwen2.5:7b`), `anthropic`(선택적 원격 대안), `fake`(테스트 전용 — 테스트는 절대 라이브 API를 치지 않는다). 실제 SDK는 생성 시점에 lazy import — optional extras 없이도 패키지가 import돼야 한다. `ttobak/web/provider.py`의 `make_provider()`는 이름 미지정 시 `$TTOBAK_PROVIDER` → `ollama` 순으로 고르고, 구성 실패 시 FakeProvider로 폴백하되 **stderr 경고 + 웹 UI 배너로 반드시 알린다**(스텁을 실제 변환으로 오인하면 안 됨).
+
+**로컬 우선은 대회 요건이자 설계 원칙이다.** 운영규정 제9조 ②-1-다는 "외부 API 호출을 통해서만 작동하는 상용 API 전용 모델을 서비스 형태로 단순 연결하는 출품작"을 제한한다. 기본값을 원격 API로 되돌리지 말 것. 기본 모델 태그는 **Ollama 공식 라이브러리에 실재하는 것**이어야 한다(`kanana-1.5-8b`는 없어서 `ollama pull`이 실패했다 — 2026-07-29 교체).
 
 **평가 (`ttobak/eval/`, `tooling/annotate_corpus.py`):** 코퍼스(`corpus/pairs.jsonl`) 주석은 손으로 지어내지 않는다 — 반드시 실제 엔진을 실행해 도출한다(재현 가능성 = 정직성). gold 페어는 fidelity 게이트 `verdict == PASS`여야 한다.
 
