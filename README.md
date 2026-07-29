@@ -6,7 +6,7 @@
   <a href="https://github.com/needsbuilder/ttobak/actions/workflows/ci.yml"><img src="https://github.com/needsbuilder/ttobak/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
   <img src="https://img.shields.io/badge/code-Apache--2.0-blue" alt="License: Apache-2.0">
   <img src="https://img.shields.io/badge/python-3.11%2B-3776AB" alt="Python 3.11+">
-  <img src="https://img.shields.io/badge/tests-403_passed-2ea44f" alt="tests 403 passed">
+  <img src="https://img.shields.io/badge/tests-411_passed-2ea44f" alt="tests 411 passed">
   <img src="https://img.shields.io/badge/corpus-CC_BY_4.0-lightgrey" alt="Corpus CC BY 4.0">
 </p>
 
@@ -36,19 +36,25 @@
 | 📏 **측정하는 쉬움** | 열두 가지 규칙(문장 길이·어려운 낱말·피동·부정 밀도 …)으로 K-ER 점수를 매기고, 점수보다 **규칙별 위반 체크리스트**를 핵심 산출물로 냅니다. |
 | 🧷 **사실이 먼저** | Fidelity 게이트가 금액·날짜·연락처·자격·기관명·개수를 슬롯별로 원문과 대조합니다. 값이 사라지면 자동 재교정, `미만→이하` 같은 의미 반전이나 `강서구청→송파구청` 같은 **기관 바꿔치기는 자동 교정 없이 사람 검수로** 돌려보냅니다. |
 | 📄 **포맷 네이티브** | 관공서 원본 포맷(PDF·HWPX)을 변환 없이 직접 파싱합니다. |
-| 🔓 **전부 공개** | 코드(Apache-2.0)·코퍼스(CC BY 4.0)·평가 하네스까지 공개. 로컬 모델(큐원 2.5 7B, Apache-2.0)로도 동일하게 동작합니다. |
+| 🔓 **전부 공개** | 코드(Apache-2.0)·코퍼스(CC BY 4.0)·평가 하네스까지 공개. 기본 구성이 로컬 오픈웨이트 모델(큐원 2.5 7B, Apache-2.0)이라 인터넷도 상용 API도 없이 돌아갑니다. |
 
 ## 빠른 시작
 
 ```bash
 python3 -m venv venv && source venv/bin/activate   # 가상환경 생성 (최신 macOS/우분투의 PEP 668 필수)
-python -m pip install -e ".[dev]"   # 설치 (Python 3.11+)
-ttobak web --provider fake          # 웹 데모 (fake = API 키 불필요)
-python -m pytest -q                 # 테스트 (403개)
+python -m pip install -e ".[dev,ollama]"   # 설치 (Python 3.11+)
+ollama serve & ollama pull qwen2.5:7b      # 로컬 모델 (Apache-2.0, 약 4.7GB)
+ttobak web                                 # 웹 데모 — 기본이 로컬 모델입니다
+python -m pytest -q                        # 테스트 (411개)
 ```
 
-Anthropic API 키가 있으면 `--provider anthropic`, 로컬 Ollama가 있으면
-`--provider ollama`(기본 모델 `qwen2.5:7b`, Apache-2.0)로 실행합니다.
+**또박은 인터넷 없이, 상용 API 없이 끝까지 동작합니다.** 필요한 모델은 직접
+내려받아 직접 구동하는 오픈웨이트 모델 하나뿐입니다.
+
+모델을 받기 전에 화면만 먼저 보고 싶으면 `ttobak web --provider fake`(고정 응답
+스텁 — 실제 변환 아님, 화면에 그렇게 표시됩니다). 원격 API를 쓰고 싶으면
+`--provider anthropic`도 있지만, 어느 것도 파이프라인의 필수 구성요소가 아닙니다
+— 자세한 건 [`docs/providers.md`](docs/providers.md).
 
 ## 아키텍처 — 공개 함수 6개
 
@@ -67,7 +73,7 @@ render_html() 원문/쉬운본 나란히 HTML + 면책 + 배지
 
 - 공개 합성 코퍼스 11쌍: K-ER 평균 **71.2 → 80.7 (Δ +9.5)**, 규칙 위반 평균 −2.09건,
   **전 페어 Fidelity PASS** — 재현: `python -m tooling.annotate_corpus`
-- 테스트 **403개** 통과 · 라이선스/보안 감사 clean (`ttobak audit`)
+- 테스트 **411개** 통과 · 라이선스/보안 감사 clean (`ttobak audit`)
 - CI 5중 게이트: 정적분석(ruff) + pytest + 의존성 라이선스 허용목록 + 자산 분리 검사 + 감사
 
 ## 정직성 (Honesty) — 반드시 읽어 주세요
