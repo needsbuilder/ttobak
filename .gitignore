@@ -19,3 +19,6 @@ dev-only/
 # Internal working handoff (not a public artifact)
 HANDOFF.md
 .gstack/
+
+# 대회 주최측이 배포한 오리엔테이션 자료 — 제3자 저작물이라 재배포하지 않는다
+docs/contest/ot-2026/
