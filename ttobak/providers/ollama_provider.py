@@ -1,7 +1,18 @@
-"""Ollama provider — the local fallback.
+"""Ollama provider — the default. Runs entirely on the local machine.
 
-Default local model: Kanana-1.5-8B (Kakao, Apache-2.0, strong Korean).
-Documented secondary: Qwen2.5-7B / 14B (Apache-2.0) via ``model="qwen2.5:7b"``.
+This is what makes Ttobak independently runnable with no network and no
+commercial API: the pipeline's only model dependency is an open-weight model
+you download and serve yourself.
+
+Default local model: Qwen2.5-7B (Alibaba, Apache-2.0) — pulled with
+``ollama pull qwen2.5:7b``. Chosen as the default because it is in Ollama's
+official library, so a first-time run works with no extra setup. Qwen2.5's
+3B and 72B sizes are NC (Qwen Research License) and must not be used; 7B/14B
+are Apache-2.0.
+
+Documented alternative: Kanana-1.5 (Kakao, Apache-2.0, strong Korean). It is
+**not** in Ollama's official library, so it needs a Hugging Face GGUF tag
+(``model="hf.co/<repo>-GGUF:<quant>"``) rather than a bare name.
 
 The ``ollama`` package is an optional dependency, imported lazily at
 construction. Tests inject a stand-in ``client`` and never touch a daemon.
@@ -14,8 +25,9 @@ class OllamaProvider:
     """LLMProvider backed by a local Ollama daemon.
 
     Args:
-        model: Ollama model tag. Default ``kanana-1.5-8b``. Documented
-            alternative: ``qwen2.5:7b`` / ``qwen2.5:14b`` (Apache-2.0).
+        model: Ollama model tag. Default ``qwen2.5:7b`` (Apache-2.0, in the
+            official library). Also fine: ``qwen2.5:14b``. Kanana-1.5 needs a
+            Hugging Face GGUF tag — see the module docstring.
         host: Optional Ollama host URL (e.g. ``http://localhost:11434``).
             If ``None``, the client resolves it from the environment.
         timeout: Request timeout in seconds passed to ``ollama.Client``.
@@ -29,7 +41,7 @@ class OllamaProvider:
     def __init__(
         self,
         *,
-        model: str = "kanana-1.5-8b",
+        model: str = "qwen2.5:7b",
         host: str | None = None,
         timeout: float | int = 120,
         client: object | None = None,

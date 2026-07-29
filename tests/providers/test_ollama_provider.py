@@ -59,9 +59,26 @@ def test_generate_omits_system_message_when_none():
     ]
 
 
-def test_default_model_is_kanana():
+# (2026-07-29) 기본 모델을 kanana-1.5-8b -> qwen2.5:7b 로 교체.
+# kanana 는 Ollama 공식 라이브러리에 없어(ollama.com/library/kanana → 404)
+# `ollama pull kanana-1.5-8b` 가 실패한다. 즉 아무것도 지정하지 않고 실행하면
+# 기본 경로가 반드시 깨졌다. qwen2.5:7b 는 공식 라이브러리에 있고 Apache-2.0
+# 이며, 결과보고서 붙임2·시연영상이 신고·사용한 바로 그 모델이다.
+def test_default_model_is_qwen25_7b():
     provider = OllamaProvider(client=_FakeOllamaClient("ok"))
-    assert provider.model == "kanana-1.5-8b"
+    assert provider.model == "qwen2.5:7b"
+
+
+def test_default_model_is_pullable_from_the_official_ollama_library():
+    """기본 모델 태그는 `ollama pull <tag>` 로 받을 수 있는 형식이어야 한다.
+
+    Ollama 공식 라이브러리 모델은 `name` 또는 `name:tag` 형식이다. `hf.co/...`
+    처럼 외부 저장소를 가리키거나, 라이브러리에 없는 이름을 기본값으로 두면
+    처음 실행하는 사람에게 곧바로 'model not found' 가 뜬다.
+    """
+    model = OllamaProvider(client=_FakeOllamaClient("ok")).model
+    assert "/" not in model, f"기본 모델이 외부 저장소 경로다: {model}"
+    assert model.split(":")[0] == "qwen2.5"
 
 
 class _RecordingClientClass:
