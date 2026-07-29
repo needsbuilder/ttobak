@@ -6,7 +6,7 @@
   <a href="https://github.com/needsbuilder/ttobak/actions/workflows/ci.yml"><img src="https://github.com/needsbuilder/ttobak/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
   <img src="https://img.shields.io/badge/code-Apache--2.0-blue" alt="License: Apache-2.0">
   <img src="https://img.shields.io/badge/python-3.11%2B-3776AB" alt="Python 3.11+">
-  <img src="https://img.shields.io/badge/tests-411_passed-2ea44f" alt="tests 411 passed">
+  <img src="https://img.shields.io/badge/tests-417_passed-2ea44f" alt="tests 417 passed">
   <img src="https://img.shields.io/badge/corpus-CC_BY_4.0-lightgrey" alt="Corpus CC BY 4.0">
 </p>
 
@@ -45,7 +45,7 @@ python3 -m venv venv && source venv/bin/activate   # 가상환경 생성 (최신
 python -m pip install -e ".[dev,ollama]"   # 설치 (Python 3.11+)
 ollama serve & ollama pull qwen2.5:7b      # 로컬 모델 (Apache-2.0, 약 4.7GB)
 ttobak web                                 # 웹 데모 — 기본이 로컬 모델입니다
-python -m pytest -q                        # 테스트 (411개)
+python -m pytest -q                        # 테스트 (417개)
 ```
 
 **또박은 인터넷 없이, 상용 API 없이 끝까지 동작합니다.** 필요한 모델은 직접
@@ -73,7 +73,7 @@ render_html() 원문/쉬운본 나란히 HTML + 면책 + 배지
 
 - 공개 합성 코퍼스 11쌍: K-ER 평균 **71.2 → 80.7 (Δ +9.5)**, 규칙 위반 평균 −2.09건,
   **전 페어 Fidelity PASS** — 재현: `python -m tooling.annotate_corpus`
-- 테스트 **411개** 통과 · 라이선스/보안 감사 clean (`ttobak audit`)
+- 테스트 **417개** 통과 · 라이선스/보안 감사 clean (`ttobak audit`)
 - CI 5중 게이트: 정적분석(ruff) + pytest + 의존성 라이선스 허용목록 + 자산 분리 검사 + 감사
 
 ## 정직성 (Honesty) — 반드시 읽어 주세요
