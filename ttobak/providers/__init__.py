@@ -1,10 +1,14 @@
 """LLM provider abstraction for Ttobak.
 
+Ttobak runs end to end on local open-weight models; every remote option is an
+interchangeable alternative, never a required component. Anything satisfying
+the ``LLMProvider`` Protocol can be swapped in.
+
 Public API:
     LLMProvider        — the structural Protocol all providers satisfy.
     FakeProvider       — deterministic scripted provider for tests.
-    AnthropicProvider  — Claude provider (demo default).
-    OllamaProvider     — local provider (Kanana-1.5-8B / Qwen2.5).
+    OllamaProvider     — local provider (Qwen2.5-7B by default), the default.
+    AnthropicProvider  — Claude provider (optional remote alternative).
     get_provider       — factory selecting a provider by name.
 """
 
@@ -18,8 +22,8 @@ from ttobak.providers.ollama_provider import OllamaProvider
 __all__ = [
     "LLMProvider",
     "FakeProvider",
-    "AnthropicProvider",
     "OllamaProvider",
+    "AnthropicProvider",
     "get_provider",
 ]
 
@@ -28,7 +32,7 @@ def get_provider(name: str, **kwargs) -> LLMProvider:
     """Build a provider by name.
 
     Args:
-        name: One of ``"fake"``, ``"anthropic"``, ``"ollama"`` (case-insensitive).
+        name: One of ``"ollama"``, ``"anthropic"``, ``"fake"`` (case-insensitive).
         **kwargs: Forwarded to the selected provider's constructor.
 
     Returns:

@@ -1,4 +1,9 @@
-"""Anthropic (Claude) provider — the demo default.
+"""Anthropic (Claude) provider — an optional remote alternative.
+
+Ttobak's default is the local :mod:`~ttobak.providers.ollama_provider`; this
+module is one interchangeable implementation of the same ``LLMProvider``
+Protocol, never a required part of the pipeline. Nothing here is reachable
+unless the caller asks for it by name (``--provider anthropic``).
 
 The ``anthropic`` SDK is an optional dependency, imported lazily at
 construction so importing this module never fails when the SDK is absent.
