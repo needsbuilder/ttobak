@@ -95,6 +95,21 @@ render_html() 원문/쉬운본 나란히 HTML + 면책 + 배지
 - 코퍼스는 현재 전부 합성 문서이며 사람 최종 검수가 남아 있습니다. 실문서(KOGL-1)
   보강과 100~300쌍 확장은 로드맵입니다.
 
+## 함께 만들기
+
+쉬운 정보는 코드만으로 좋아지지 않습니다. 어떤 문서가 왜 어려운지 아는 사람의
+손이 필요합니다.
+
+**개발자가 아니어도 할 수 있는 것**
+- [코퍼스 페어 추가](https://github.com/needsbuilder/ttobak/issues/11) — 지금 11쌍이고 전부 제가 지어낸 예시입니다. 실제 공공문서 기반 페어가 필요합니다
+- [픽토그램 낱말 추가](https://github.com/needsbuilder/ttobak/issues/9) — 글을 읽기 어려운 사람은 그림을 먼저 봅니다. 지금 33개뿐입니다
+
+**코드로 시작하기 좋은 것**
+- [`good first issue`](https://github.com/needsbuilder/ttobak/issues?q=is%3Aissue+is%3Aopen+label%3A%22good+first+issue%22) 라벨을 보세요. 범위와 주의점을 이슈 안에 적어 뒀습니다
+
+개발 규율(TDD)·커밋 형식·라이선스 경계는 [`CONTRIBUTING.md`](CONTRIBUTING.md)에
+있습니다. 한국어·영어 모두 환영합니다.
+
 ## 라이선스 — 세 갈래 분리
 
 | 대상 | 라이선스 | 위치 |

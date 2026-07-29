@@ -10,11 +10,22 @@ welcome too — feel free to file issues/PRs in English.)
 git clone https://github.com/needsbuilder/ttobak.git
 cd ttobak
 python3 -m venv venv && source venv/bin/activate   # Python 3.11+
-python -m pip install -e ".[dev]"
+python -m pip install -e ".[dev,ollama]"
 python -m pytest -q          # 전체 테스트
 python -m tooling.check_licenses --root .   # 라이선스·보안 감사 게이트 (= ttobak audit)
-ttobak web --provider fake   # 웹 데모 (API 키 불필요)
+
+ollama serve & ollama pull qwen2.5:7b   # 로컬 모델 (Apache-2.0, 약 4.7GB)
+ttobak web                   # 웹 데모 — 기본이 로컬 모델입니다
 ```
+
+모델을 받기 전에 화면만 먼저 보려면 `ttobak web --provider fake` 를 쓰세요.
+고정 응답을 돌려주는 스텁이라 실제 변환이 아니고, 화면에도 그렇게 표시됩니다.
+
+## 어디서 시작할까
+
+[`good first issue`](https://github.com/needsbuilder/ttobak/issues?q=is%3Aissue+is%3Aopen+label%3A%22good+first+issue%22)
+라벨이 붙은 이슈에 범위와 주의점을 적어 뒀습니다. 코드가 아니어도 됩니다 —
+코퍼스 페어와 픽토그램 낱말은 현장을 아는 분의 손이 더 필요한 일입니다.
 
 ## 개발 규율 — TDD
 
