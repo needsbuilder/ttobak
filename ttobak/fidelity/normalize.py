@@ -2,7 +2,8 @@
 
 Spec sections 6.4, 6.6, 6.8, 14.1. Pure-Python deterministic core so the unit
 suite can target recall 1.0 without external model/network dependencies.
-``korean-number`` and ``dateparser`` are documented optional cross-checks; the
+``korean-number`` and ``dateparser`` are documented optional cross-checks and
+are not imported here (``dateparser`` lives in the ``dates`` extra); the
 deterministic algorithms below are authoritative for tests.
 """
 from __future__ import annotations
