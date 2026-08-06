@@ -30,9 +30,12 @@ may relink against a modified version per the LGPL.
 -----------------------------------------------------------------------------
 Model weights
 -----------------------------------------------------------------------------
-Local-model paths may use Qwen2.5 (Apache-2.0). Required attribution:
+The shipped local default is Qwen2.5-7B (Apache-2.0), pulled via Ollama as
+`qwen2.5:7b`. Required attribution:
   "Built with Qwen"
-and Kanana-1.5-8B/2.1B (Apache-2.0, Kakao). Non-commercial / gated models
+Kanana-1.5-8B/2.1B (Apache-2.0, Kakao) is a licence-clean alternative that
+Ttobak does not pull or default to — it is absent from the Ollama official
+library (verified 2026-07-29). Non-commercial / gated models
 (Qwen2.5-3B/72B, Kanana-2-30B, EXAONE) are NOT shipped and are excluded from
 all release artifacts; documented only as known alternatives.
 
