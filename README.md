@@ -78,7 +78,7 @@ render_html() 원문/쉬운본 나란히 HTML + 면책 + 배지
 ## 숫자로 보는 또박 (전부 실측·재현 가능)
 
 - 공개 합성 코퍼스 11쌍: K-ER 평균 **71.2 → 80.7 (Δ +9.5)**, 규칙 위반 평균 −2.09건,
-  **전 페어 Fidelity PASS** — 재현: `python -m tooling.annotate_corpus`
+  **전 페어 Fidelity PASS** — 재현: `python -m tooling.annotate_corpus --corpus`
 - 테스트 **417개** 통과 · 라이선스/보안 감사 clean (`ttobak audit`)
 - CI 5중 게이트: 정적분석(ruff) + pytest + 의존성 라이선스 허용목록 + 자산 분리 검사 + 감사
 
