@@ -93,3 +93,20 @@ def test_render_html_easy_layout_font_size():
     html = render_html(_build_result())
     assert "font-size: 18px" in html
     assert "text-align: left" in html
+
+
+# Bug regression (2026-08-25): pipeline._final_verdict() escalates a REVISE that
+# survives max_revise to HUMAN_REVIEW (spec 6.8 case d), but render_html() read
+# result.fidelity.verdict — the pre-escalation value — so the exact "we could not
+# fix it, so we stopped" case rendered as "수정 필요" instead of "검수 필요".
+# The badge MUST follow EasyReadResult.verdict (the pipeline's final verdict).
+def test_render_html_badge_follows_final_verdict_not_last_fidelity_check():
+    result = _build_result()
+    result.fidelity = FidelityReport(slots=[], verdict=Verdict.REVISE)
+    result.verdict = Verdict.HUMAN_REVIEW
+
+    html = render_html(result)
+
+    assert "badge-human_review" in html
+    assert "검수 필요" in html
+    assert "수정 필요" not in html
