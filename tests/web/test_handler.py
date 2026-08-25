@@ -78,3 +78,20 @@ def test_handler_output_pictogram_src_is_gradio_servable():
     assert 'src="assets/pictograms/' not in html, "raw core path leaked into Gradio HTML unrewritten"
     assert "/gradio_api/file=" in html, "pictogram present but not rewritten to Gradio serving scheme"
     assert str(webapp._PICTOGRAMS_DIR) in html
+
+
+# Bug regression (2026-08-25): when the revise loop exhausts max_revise the
+# pipeline's final verdict is HUMAN_REVIEW, but the web badge read
+# result.fidelity.verdict (still REVISE) and showed "Fidelity 재교정됨 🔁" —
+# a success signal on output that still has the amount missing.
+def test_handler_badge_says_human_review_when_revise_loop_exhausts():
+    # Always drops the amount and the deadline -> REVISE every round -> exhausted.
+    dropping = FakeProvider(default="건강보험료를 기한 안에 내세요.")
+
+    _, _, fid_badge = webapp.simplify_handler(
+        "건강보험료 1,295,400원을 2026년 7월 17일까지 납부하세요.", None,
+        next(iter(webapp.LEVEL_CHOICES)), dropping,
+    )
+
+    assert "검수" in fid_badge
+    assert "재교정" not in fid_badge
