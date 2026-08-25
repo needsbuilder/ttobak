@@ -16,14 +16,28 @@ def test_summarize_corpus_covers_every_pair():
     assert len(summary["pairs"]) == summary["n"]
 
 
-def test_recorded_ker_scores_match_a_live_rescore():
-    """코퍼스에 적힌 ker_score 가 지금 엔진이 내는 값과 같아야 한다.
+#: 형태소 분석기 빌드 차이로 허용하는 페어 단위 K-ER 오차.
+#:
+#: 2026-08-25 관측: kiwipiepy 0.23.2 / kiwipiepy_model 0.23.0 으로 **버전이 같아도**
+#: 플랫폼 빌드가 다르면 (macOS arm64 wheel vs manylinux x86_64 wheel) 토큰화가 갈려
+#: 점수가 흔들린다. synth-0011 이 macOS 82.4 / Linux 81.9 로 0.5 차이가 났다.
+#: 손으로 쓴 주석이나 규칙 변경은 이보다 훨씬 크게 움직이므로, 이 폭을 허용해도
+#: 테스트의 목적(주석이 실제 엔진에서 나왔는가)은 유지된다.
+KER_BUILD_TOLERANCE = 1.0
 
-    어긋나면 주석이 손으로 쓰였거나 규칙이 바뀐 뒤 재주석하지 않은 것이다.
+
+def test_recorded_ker_scores_match_a_live_rescore():
+    """코퍼스에 적힌 ker_score 가 지금 엔진이 내는 값과 (오차 내에서) 같아야 한다.
+
+    크게 어긋나면 주석이 손으로 쓰였거나 규칙이 바뀐 뒤 재주석하지 않은 것이다.
+    형태소 분석기 빌드 차이는 KER_BUILD_TOLERANCE 로 흡수한다.
     """
     summary = summarize_corpus(CORPUS)
-    drifted = [p for p in summary["pairs"] if p["recorded"] != p["after"]]
-    assert not drifted, f"기록값과 재채점이 다른 페어: {drifted}"
+    drifted = [
+        p for p in summary["pairs"]
+        if abs(p["recorded"] - p["after"]) > KER_BUILD_TOLERANCE
+    ]
+    assert not drifted, f"기록값과 재채점이 {KER_BUILD_TOLERANCE} 넘게 다른 페어: {drifted}"
 
 
 def test_every_gold_pair_passes_the_fidelity_gate():
