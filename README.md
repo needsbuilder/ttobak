@@ -129,7 +129,7 @@ render_html() 원문/쉬운본 나란히 HTML + 면책 + 배지
 
 **개발자가 아니어도 할 수 있는 것**
 - [코퍼스 페어 추가](https://github.com/needsbuilder/ttobak/issues/11) — 지금 11쌍이고 전부 제가 지어낸 예시입니다. 실제 공공문서 기반 페어가 필요합니다
-- [픽토그램 낱말 추가](https://github.com/needsbuilder/ttobak/issues/9) — 글을 읽기 어려운 사람은 그림을 먼저 봅니다. 지금 33개뿐입니다
+- [픽토그램 낱말 추가](https://github.com/needsbuilder/ttobak/issues/9) — 글을 읽기 어려운 사람은 그림을 먼저 봅니다. 지금 32개뿐입니다
 
 **코드로 시작하기 좋은 것**
 - [`good first issue`](https://github.com/needsbuilder/ttobak/issues?q=is%3Aissue+is%3Aopen+label%3A%22good+first+issue%22) 라벨을 보세요. 범위와 주의점을 이슈 안에 적어 뒀습니다
