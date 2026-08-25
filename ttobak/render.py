@@ -57,7 +57,10 @@ def render_html(result: EasyReadResult) -> str:
     disclaimer, the (non-validated) K-ER score + per-rule violations, the
     fidelity verdict badge, and pictograms as file-path references only.
     """
-    badge_class, badge_label = _VERDICT_BADGE[result.fidelity.verdict]
+    # The badge MUST show the pipeline's FINAL verdict, not the last single
+    # fidelity check: a REVISE that survives max_revise is escalated to
+    # HUMAN_REVIEW (spec 6.8 case d) and the reader has to see that.
+    badge_class, badge_label = _VERDICT_BADGE[result.verdict]
     template = _env.get_template(_TEMPLATE_NAME)
     return template.render(
         disclaimer=_DISCLAIMER,
@@ -70,7 +73,7 @@ def render_html(result: EasyReadResult) -> str:
             {"rule": v.rule, "span": v.span, "severity": v.severity.value, "suggestion": v.suggestion}
             for v in result.ker.violations
         ],
-        fidelity_verdict=result.fidelity.verdict.value,
+        fidelity_verdict=result.verdict.value,
         fidelity_badge_class=badge_class,
         fidelity_badge_label=badge_label,
         pictograms=[{"src": _pictogram_src(p.glyph_id), "caption": p.caption} for p in result.pictograms],

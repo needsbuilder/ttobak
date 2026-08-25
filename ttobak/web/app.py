@@ -193,7 +193,7 @@ def simplify_handler(text_input: str, file_obj, level_label: str, provider: LLMP
         doc = parse(source, mime)
         result = simplify(doc, level, provider)
         html = _serve_pictograms_via_gradio(render_html(result))
-        return html, _ker_badge(result.ker), _fidelity_badge(result.fidelity.verdict)
+        return html, _ker_badge(result.ker), _fidelity_badge(result.verdict)
     except Exception as exc:  # noqa: BLE001 — 데모 UI는 어떤 실패도 메시지로 표시
         msg = _html.escape(str(exc)) or "변환 중 오류가 발생했습니다."
         return f'<div class="ttobak-error">변환 오류: {msg}</div>', "", ""
