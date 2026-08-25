@@ -6,7 +6,7 @@
   <a href="https://github.com/needsbuilder/ttobak/actions/workflows/ci.yml"><img src="https://github.com/needsbuilder/ttobak/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
   <img src="https://img.shields.io/badge/code-Apache--2.0-blue" alt="License: Apache-2.0">
   <img src="https://img.shields.io/badge/python-3.11%2B-3776AB" alt="Python 3.11+">
-  <img src="https://img.shields.io/badge/tests-417_passed-2ea44f" alt="tests 417 passed">
+  <img src="https://img.shields.io/badge/tests-427_passed-2ea44f" alt="tests 427 passed">
   <img src="https://img.shields.io/badge/corpus-CC_BY_4.0-lightgrey" alt="Corpus CC BY 4.0">
 </p>
 
@@ -51,7 +51,7 @@ python3 -m venv venv && source venv/bin/activate   # 가상환경 생성 (최신
 python -m pip install -e ".[dev,ollama]"   # 설치 (Python 3.11+)
 ollama serve & ollama pull qwen2.5:7b      # 로컬 모델 (Apache-2.0, 약 4.7GB)
 ttobak web                                 # 웹 데모 — 기본이 로컬 모델입니다
-python -m pytest -q                        # 테스트 (417개)
+python -m pytest -q                        # 테스트 (427개)
 ```
 
 **또박은 인터넷 없이, 상용 API 없이 끝까지 동작합니다.** 필요한 모델은 직접
@@ -61,6 +61,27 @@ python -m pytest -q                        # 테스트 (417개)
 스텁 — 실제 변환 아님, 화면에 그렇게 표시됩니다). 원격 API를 쓰고 싶으면
 `--provider anthropic`도 있지만, 어느 것도 파이프라인의 필수 구성요소가 아닙니다
 — 자세한 건 [`docs/providers.md`](docs/providers.md).
+
+### 라이브러리로 가져다 쓰기
+
+```python
+from ttobak import simplify, render_html          # 공개 함수는 패키지 최상위에 있습니다
+from ttobak.parse import parse                    # parse 만 모듈 경로입니다 (아래 주 참고)
+from ttobak.levels import Level
+from ttobak.providers import get_provider
+
+doc = parse("납부기한이 경과할 경우 연체금이 가산됩니다.", "text/plain")
+provider = get_provider("fake", default="기한이 지나면 돈을 더 내야 해요.")  # 모델 없이 확인용 스텁
+result = simplify(doc, Level.EASY, provider)
+
+print(result.verdict.value)   # pass / revise / human_review — 파이프라인 최종 판정
+print(result.ker.score)       # 규칙 기반 보조 점수 (검증된 지표 아님)
+open("out.html", "w").write(render_html(result))
+```
+
+> `parse` 만 `ttobak.parse` 에서 가져옵니다. `ttobak.parse` 가 서브패키지 이름이기도 해서
+> 최상위 이름을 함수로 덮으면 `import ttobak.parse.pdf_parser` 가 깨지기 때문입니다 —
+> 하나의 이름이 모듈이면서 함수일 수는 없습니다.
 
 ## 아키텍처 — 공개 함수 6개
 
@@ -78,8 +99,8 @@ render_html() 원문/쉬운본 나란히 HTML + 면책 + 배지
 ## 숫자로 보는 또박 (전부 실측·재현 가능)
 
 - 공개 합성 코퍼스 11쌍: K-ER 평균 **71.2 → 80.7 (Δ +9.5)**, 규칙 위반 평균 −2.09건,
-  **전 페어 Fidelity PASS** — 재현: `python -m tooling.annotate_corpus`
-- 테스트 **417개** 통과 · 라이선스/보안 감사 clean (`ttobak audit`)
+  **전 페어 Fidelity PASS** — 재현: `python -m tooling.annotate_corpus --corpus`
+- 테스트 **427개** 통과 · 라이선스/보안 감사 clean (`ttobak audit`)
 - CI 5중 게이트: 정적분석(ruff) + pytest + 의존성 라이선스 허용목록 + 자산 분리 검사 + 감사
 
 ## 정직성 (Honesty) — 반드시 읽어 주세요
@@ -108,7 +129,7 @@ render_html() 원문/쉬운본 나란히 HTML + 면책 + 배지
 
 **개발자가 아니어도 할 수 있는 것**
 - [코퍼스 페어 추가](https://github.com/needsbuilder/ttobak/issues/11) — 지금 11쌍이고 전부 제가 지어낸 예시입니다. 실제 공공문서 기반 페어가 필요합니다
-- [픽토그램 낱말 추가](https://github.com/needsbuilder/ttobak/issues/9) — 글을 읽기 어려운 사람은 그림을 먼저 봅니다. 지금 33개뿐입니다
+- [픽토그램 낱말 추가](https://github.com/needsbuilder/ttobak/issues/9) — 글을 읽기 어려운 사람은 그림을 먼저 봅니다. 지금 32개뿐입니다
 
 **코드로 시작하기 좋은 것**
 - [`good first issue`](https://github.com/needsbuilder/ttobak/issues?q=is%3Aissue+is%3Aopen+label%3A%22good+first+issue%22) 라벨을 보세요. 범위와 주의점을 이슈 안에 적어 뒀습니다
