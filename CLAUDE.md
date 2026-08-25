@@ -6,7 +6,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 **또박(Ttobak)** — 어려운 한국어 공공·행정 문서를 "쉬운 정보(Easy-Read)"로 변환하는 오픈소스 엔진. 쉬움을 K-ER 점수로 측정하고, Fidelity 게이트로 사실(숫자·날짜·금액·기한·자격·기관명)을 보존하며 자가 교정한다. 2026 오픈소스 개발자대회 출품작. 코드 Apache-2.0 / 데이터(corpus) CC BY 4.0 / 픽토그램(assets) CC BY-SA — 세 라이선스는 절대 섞이면 안 된다(아래 라이선스 절 참조).
 
-상세 스펙은 `docs/superpowers/plans/2026-06-30-ttobak-mvp.md` — 코드 docstring의 "spec 6.8" 같은 인용이 가리키는 문서다.
+상세 스펙은 `docs/2026-06-30-ttobak-easy-read-engine-spec.md` — 코드 docstring의 "spec 6.8" 같은 인용이 가리키는 문서다.
+구현 계획(63개 TDD 태스크)은 `docs/2026-06-30-ttobak-mvp-plan.md`(역사적 계획서, 상단 지위 노트 참조).
 
 ## 명령어
 

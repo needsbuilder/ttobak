@@ -203,7 +203,7 @@ _SCAN_EXCLUDE_FILES: frozenset[str] = frozenset({
     # .superpowers/sdd/task-58/59/63-*.md (excluded above). NOTE: don't spell
     # the placeholder key out literally in this file — the regex it's meant
     # to demonstrate would flag this comment too (self-referential match).
-    "docs/superpowers/plans/2026-06-30-ttobak-mvp.md",
+    "docs/2026-06-30-ttobak-mvp-plan.md",
 })
 
 _SCANNABLE_SUFFIXES: frozenset[str] = frozenset({
