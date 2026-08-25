@@ -1,6 +1,16 @@
 # 또박(Ttobak) MVP Implementation Plan
 
-REQUIRED SUB-SKILL: superpowers:subagent-driven-development or superpowers:executing-plans — each task below is a TDD unit (write failing test → run red → implement → run green → commit). Workers MUST follow that loop and check off each `- [ ]` step as it completes.
+> **문서 지위 (2026-08-25 추가)** — 이 문서는 2026-06-30 구현 착수 전에 작성한 역사적
+> 실행 계획이다. 아래 미체크 항목(`- [ ]`)은 당시 TDD 절차 템플릿이며 **현재 미완료 표시가
+> 아니다** — 63개 태스크는 전부 완료됐고 구현 실물은 저장소 코드, 실행 이력은 git 히스토리가
+> 정본이다.
+>
+> 구현 뒤 바뀐 결정: LLM 프로바이더 기본값은 **Ollama 로컬(`qwen2.5:7b`)**, Anthropic 은
+> 선택적 원격 대안이다(아래 Architecture/Tech Stack 의 "Anthropic API default" 는 계획 시점
+> 표기). Kanana-1.5-8B 는 Ollama 공식 라이브러리 부재로 2026-07-29 교체(PR #3). spaCy NER ·
+> dateparser · korean-number 는 MVP 에 싣지 않았다(로드맵). OpenAI 프로바이더는 없다.
+> 현재 동작의 정본은 `README.md`, `docs/providers.md`, `pyproject.toml` 및 코드다.
+> 설계 명세는 `docs/2026-06-30-ttobak-easy-read-engine-spec.md`.
 
 **Goal:** Ship an open-source (Apache-2.0) Korean Easy-Read engine that converts hard public/administrative documents into easy-read text, measures easiness with a rule-based K-ER score, self-corrects via a generate→measure→revise loop, and preserves facts (numbers/dates/amounts/deadlines/eligibility/entities) through a deterministic fidelity gate — with a side-by-side renderer, pictogram lookup, web demo, evaluation harness, and a license/security CI gate, all by 8/27.
 
