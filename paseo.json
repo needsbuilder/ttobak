@@ -1,7 +1,0 @@
-{
-  "worktree": {
-    "setup": [
-      "pip install -e \".[dev,ollama]\""
-    ]
-  }
-}
