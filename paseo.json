@@ -1,0 +1,23 @@
+{
+  "worktree": {
+    "setup": [
+      "python3 -m venv .venv",
+      ".venv/bin/python -m pip install --disable-pip-version-check -e \".[dev]\""
+    ]
+  },
+  "scripts": {
+    "web-fake": {
+      "type": "service",
+      "command": ".venv/bin/ttobak web --provider fake --host \"$HOST\" --port \"$PASEO_PORT\""
+    },
+    "test": { "command": ".venv/bin/python -m pytest -q" },
+    "lint": { "command": ".venv/bin/ruff check ." },
+    "audit": { "command": ".venv/bin/ttobak audit" }
+  },
+  "metadataGeneration": {
+    "title": { "instructions": "Use a short, outcome-focused title." },
+    "branchName": { "instructions": "Use a task-appropriate feat/, fix/, chore/, or docs/ prefix followed by a short kebab-case English description." },
+    "commitMessage": { "instructions": "Use Conventional Commits with an appropriate scope and an imperative subject." },
+    "pullRequest": { "instructions": "Start with a one-sentence summary, then include a Testing section with the commands run and their results." }
+  }
+}
